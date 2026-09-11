@@ -1,10 +1,23 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('meaux-burreax-theme');
+          document.documentElement.dataset.theme = stored === 'light' ? 'light' : 'dark';
+        } catch (error) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fantasy football pre-season tiers and write-ups for Meaux Burreax.">
     <title>Meaux Burreax: Tiers for Fears</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/site.css">
     <script src="assets/site.js" defer></script>
   </head>
@@ -18,62 +31,58 @@
             <li><a aria-current="page" href="index.html">Home</a></li>
             <li><a href="pages/index.html">Pre-Season Rankings</a></li>
           </ul>
-        </nav>
+        </nav><button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false"><span class="theme-toggle__icon" aria-hidden="true">☾</span><span class="theme-toggle__label">Dark</span></button>
       </div>
     </header>
     <main id="main-content">
       <section class="hero content-wrap">
         <p class="eyebrow">Fantasy football write-ups</p>
         <h1>Meaux Burreax: Tiers for Fears.</h1>
-        <p class="lede">Pre-season rankings, draft-night analysis, and unearned confidence—organized by year.</p>
-        <p><a class="button" href="pages/index.html">Browse pre-season rankings</a></p>
+        <p class="lede">Everybody wants to rule nonsrs football.</p>
+        <p><a class="button" href="pages/index.html">Pre-Season Rankings</a></p>
       </section>
-      <section class="content-wrap kpi-section" aria-labelledby="kpi-title">
-        <p class="eyebrow">Accuracy check</p>
-        <h2 id="kpi-title">How good are the tier lists, really?</h2>
-        <p class="kpi-caption" id="kpi-caption">Loading&hellip;</p>
-        <div
-          id="kpi-row"
-          class="kpi-row"
-          data-tier-src="assets/data/tier-rankings.csv"
-          data-results-src="assets/data/season-results.csv"
-          aria-live="polite"
-        ></div>
-      </section>
-      <section class="content-wrap ranking-history" aria-labelledby="ranking-history-title">
-        <p class="eyebrow">History</p>
-        <h2 id="ranking-history-title">Tier-list rankings over time</h2>
-        <div class="ranking-layout">
-          <div
-            id="ranking-chart"
-            class="ranking-chart"
-            data-src="assets/data/tier-rankings.csv"
-            data-title="Meaux Burreax pre-season tier rankings from 2024 to 2026"
-            data-description="Line chart showing each manager's pre-season tier rank, where 1 is the highest position, across the 2024, 2025, and 2026 pre-season tier lists."
-            aria-live="polite"
-          ></div>
-          <section class="ranking-average" aria-labelledby="ranking-average-title">
-            <h3 id="ranking-average-title">Average placement</h3>
-            <div id="ranking-average-table"></div>
-          </section>
+      <section class="charts-stack" aria-label="Rankings history">
+        <div class="chart-block">
+          <div class="chart-block__head">
+            <h2 class="chart-title" id="ranking-history-title">Tier Rankings</h2>
+            <p class="chart-subtitle">Pre-season placement, 2024&ndash;2026 &middot; 1 is best</p>
+          </div>
+          <div class="ranking-layout">
+            <div
+              id="ranking-chart"
+              class="ranking-chart"
+              data-src="assets/data/tier-rankings.csv"
+              data-title="Meaux Burreax pre-season tier rankings from 2024 to 2026"
+              data-description="Line chart showing each manager's pre-season tier rank, where 1 is the highest position, across the 2024, 2025, and 2026 pre-season tier lists."
+              aria-live="polite"
+              aria-labelledby="ranking-history-title"
+            ></div>
+            <section class="ranking-average" aria-labelledby="ranking-average-title">
+              <h3 id="ranking-average-title">Average placement</h3>
+              <div id="ranking-average-table"></div>
+            </section>
+          </div>
         </div>
-      </section>
-      <section class="content-wrap ranking-history" aria-labelledby="results-history-title">
-        <p class="eyebrow">History</p>
-        <h2 id="results-history-title">Actual season results over time</h2>
-        <div class="ranking-layout">
-          <div
-            id="results-chart"
-            class="ranking-chart"
-            data-src="assets/data/season-results.csv"
-            data-title="Meaux Burreax actual season results from 2024 to 2026"
-            data-description="Line chart showing each manager's actual final season standing, where 1 is the highest position, across the 2024, 2025, and 2026 seasons."
-            aria-live="polite"
-          ></div>
-          <section class="ranking-average" aria-labelledby="results-average-title">
-            <h3 id="results-average-title">Average placement</h3>
-            <div id="results-average-table"></div>
-          </section>
+        <div class="chart-block">
+          <div class="chart-block__head">
+            <h2 class="chart-title" id="results-history-title">Actual Results</h2>
+            <p class="chart-subtitle">Final season standing, 2022&ndash;2025 &middot; 1 is best</p>
+          </div>
+          <div class="ranking-layout">
+            <div
+              id="results-chart"
+              class="ranking-chart"
+              data-src="assets/data/season-results.csv"
+              data-title="Meaux Burreax actual season results from 2022 to 2025"
+              data-description="Line chart showing each manager's actual final season standing, where 1 is the highest position, across the 2022, 2023, 2024, and 2025 seasons."
+              aria-live="polite"
+              aria-labelledby="results-history-title"
+            ></div>
+            <section class="ranking-average" aria-labelledby="results-average-title">
+              <h3 id="results-average-title">Average placement</h3>
+              <div id="results-average-table"></div>
+            </section>
+          </div>
         </div>
       </section>
     </main>
