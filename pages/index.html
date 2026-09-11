@@ -1,10 +1,23 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('meaux-burreax-theme');
+          document.documentElement.dataset.theme = stored === 'light' ? 'light' : 'dark';
+        } catch (error) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Browse Meaux Burreax pre-season fantasy football rankings by year.">
     <title>Pre-Season Rankings · Meaux Burreax: Tiers for Fears</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/site.css">
     <script src="../assets/site.js" defer></script>
   </head>
@@ -18,7 +31,7 @@
             <li><a href="../index.html">Home</a></li>
             <li><a aria-current="page" href="index.html">Pre-Season Rankings</a></li>
           </ul>
-        </nav>
+        </nav><button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false"><span class="theme-toggle__icon" aria-hidden="true">☾</span><span class="theme-toggle__label">Dark</span></button>
       </div>
     </header>
     <main id="main-content" class="content-wrap page-intro">

@@ -16,18 +16,18 @@ if (list) {
 // Every manager gets one fixed color, used consistently across every chart on the site
 // (regardless of what order rows appear in a given CSV, or which years a chart covers).
 const managerColors = {
-  Noah: '#0f766e',
-  Tom: '#dc2626',
-  Goutham: '#2563eb',
-  Peggy: '#d97706',
-  Vinny: '#7c3aed',
-  David: '#0891b2',
-  Dongbo: '#db2777',
-  Theo: '#65a30d',
-  Sam: '#c2410c',
-  Michael: '#4f46e5',
-  Yiding: '#a16207',
-  Wenlong: '#475569',
+  Noah: '#2dd4bf',
+  Tom: '#f87171',
+  Goutham: '#60a5fa',
+  Peggy: '#06b6d4',
+  Vinny: '#c084fc',
+  David: '#34d399',
+  Dongbo: '#f472b6',
+  Theo: '#84cc16',
+  Sam: '#fb923c',
+  Michael: '#818cf8',
+  Yiding: '#d946ef',
+  Wenlong: '#94a3b8',
 };
 
 const profileImages = {
@@ -174,3 +174,30 @@ document.querySelectorAll('.ranking-chart[data-src]').forEach(chartEl => {
       chartEl.innerHTML = '<p>Unable to load chart data.</p>';
     });
 });
+
+// Light/dark toggle. The initial theme is already applied by a small inline
+// script in <head> (before first paint, reading the same storage key) so
+// there's no flash of the wrong theme; this just wires up the button click
+// and keeps its label/icon in sync with the current theme.
+const THEME_KEY = 'meaux-burreax-theme';
+
+function reflectTheme(theme) {
+  document.querySelectorAll('[data-theme-toggle]').forEach(button => {
+    button.setAttribute('aria-pressed', String(theme === 'light'));
+    const icon = button.querySelector('.theme-toggle__icon');
+    const label = button.querySelector('.theme-toggle__label');
+    if (icon) icon.textContent = theme === 'dark' ? '☾' : '☀';
+    if (label) label.textContent = theme === 'dark' ? 'Dark' : 'Light';
+  });
+}
+
+document.querySelectorAll('[data-theme-toggle]').forEach(button => {
+  button.addEventListener('click', () => {
+    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem(THEME_KEY, next); } catch (error) { /* storage unavailable; theme just won't persist */ }
+    reflectTheme(next);
+  });
+});
+
+reflectTheme(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
