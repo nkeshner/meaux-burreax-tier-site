@@ -147,7 +147,7 @@ function renderRankingChart({ chartEl, averageEl, years, rankingData, title, des
         const svgHeight = chartEl.querySelector('svg').getBoundingClientRect().height;
         averagePanel.style.setProperty('--chart-height', `${svgHeight}px`);
         averagePanel.style.setProperty('--chart-top', `${svgHeight * top / height}px`);
-        averagePanel.style.setProperty('--chart-step', `${svgHeight * (height - top - bottom) / (rankCount - 1 || 1)}px`);
+        averagePanel.style.setProperty('--chart-step', `${svgHeight * (height - top - bottom) / height / (rankCount - 1 || 1)}px`);
       };
       new ResizeObserver(alignStandings).observe(chartEl);
       alignStandings();
