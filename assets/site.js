@@ -16,18 +16,18 @@ if (list) {
 // Every manager gets one fixed color, used consistently across every chart on the site
 // (regardless of what order rows appear in a given CSV, or which years a chart covers).
 const managerColors = {
-  Noah: '#2dd4bf',
-  Tom: '#f87171',
-  Goutham: '#60a5fa',
-  Peggy: '#06b6d4',
-  Vinny: '#c084fc',
-  David: '#34d399',
-  Dongbo: '#f472b6',
-  Theo: '#84cc16',
-  Sam: '#fb923c',
-  Michael: '#818cf8',
-  Yiding: '#d946ef',
-  Wenlong: '#94a3b8',
+  Noah: '#0f766e',
+  Tom: '#dc2626',
+  Goutham: '#2563eb',
+  Peggy: '#d97706',
+  Vinny: '#7c3aed',
+  David: '#0891b2',
+  Dongbo: '#db2777',
+  Theo: '#65a30d',
+  Sam: '#c2410c',
+  Michael: '#4f46e5',
+  Yiding: '#a16207',
+  Wenlong: '#475569',
 };
 
 const profileImages = {
@@ -147,7 +147,7 @@ function renderRankingChart({ chartEl, averageEl, years, rankingData, title, des
         const svgHeight = chartEl.querySelector('svg').getBoundingClientRect().height;
         averagePanel.style.setProperty('--chart-height', `${svgHeight}px`);
         averagePanel.style.setProperty('--chart-top', `${svgHeight * top / height}px`);
-        averagePanel.style.setProperty('--chart-step', `${svgHeight * (height - top - bottom) / height / (rankCount - 1 || 1)}px`);
+        averagePanel.style.setProperty('--chart-step', `${svgHeight * (height - top - bottom) / (rankCount - 1 || 1)}px`);
       };
       new ResizeObserver(alignStandings).observe(chartEl);
       alignStandings();
@@ -175,29 +175,141 @@ document.querySelectorAll('.ranking-chart[data-src]').forEach(chartEl => {
     });
 });
 
-// Light/dark toggle. The initial theme is already applied by a small inline
-// script in <head> (before first paint, reading the same storage key) so
-// there's no flash of the wrong theme; this just wires up the button click
-// and keeps its label/icon in sync with the current theme.
-const THEME_KEY = 'meaux-burreax-theme';
+// ---- KPI tiles: how well do the pre-season tier lists predict actual results? ----
+// All four metrics are calculated the same way: pool one row per manager per
+// season where BOTH a predicted tier rank and an actual result exist (so right
+// now, that's 2024 and 2025 only — 2026 has a tier list but no result yet, and
+// 2022/2023 have results but no tier list), then compute the metric across that
+// pooled set. This keeps every tile driven by one consistent, easy-to-explain
+// rule, and it automatically picks up new seasons as both CSVs grow.
+const kpiInfo = {
+  tau: {
+    label: "Kendall's tau",
+    format: value => value.toFixed(2),
+    tip: "How often the tier list ranked any two manager-seasons in the same order they actually finished, pooled across every season with both a prediction and a result. Ranges from \u22121 (always backwards) to +1 (always correct); 0 is no better than a coin flip.",
+  },
+  mae: {
+    label: 'Mean absolute rank error',
+    format: value => `${value.toFixed(2)} spots`,
+    tip: "On average, how many spots a manager's actual finish differed from their pre-season tier rank, across every manager-season with both a prediction and a result.",
+  },
+  top3: {
+    label: 'Top 3 hit rate',
+    format: value => `${Math.round(value * 100)}%`,
+    tip: 'Of the managers predicted into the top 3 each season, the share who actually finished there.',
+  },
+  bottom3: {
+    label: 'Bottom 3 hit rate',
+    format: value => `${Math.round(value * 100)}%`,
+    tip: 'Of the managers predicted into the bottom 3 each season, the share who actually finished there.',
+  },
+};
 
-function reflectTheme(theme) {
-  document.querySelectorAll('[data-theme-toggle]').forEach(button => {
-    button.setAttribute('aria-pressed', String(theme === 'light'));
-    const icon = button.querySelector('.theme-toggle__icon');
-    const label = button.querySelector('.theme-toggle__label');
-    if (icon) icon.textContent = theme === 'dark' ? '☾' : '☀';
-    if (label) label.textContent = theme === 'dark' ? 'Dark' : 'Light';
+// Builds one { name, year, predicted, actual } row per manager per season where
+// both a predicted tier rank and an actual result exist.
+function buildOverlapPairs(tierData, resultsData) {
+  const tierByName = Object.fromEntries(tierData.rankingData.map(manager => [manager.name, manager]));
+  const overlapYears = tierData.years.filter(year => resultsData.years.includes(year));
+  const pairs = [];
+  overlapYears.forEach(year => {
+    const tierIndex = tierData.years.indexOf(year);
+    const resultIndex = resultsData.years.indexOf(year);
+    resultsData.rankingData.forEach(manager => {
+      const tierManager = tierByName[manager.name];
+      if (!tierManager) return;
+      const predicted = tierManager.ranks[tierIndex];
+      const actual = manager.ranks[resultIndex];
+      if (predicted == null || actual == null) return;
+      pairs.push({ name: manager.name, year, predicted, actual });
+    });
   });
+  return { overlapYears, pairs };
 }
 
-document.querySelectorAll('[data-theme-toggle]').forEach(button => {
-  button.addEventListener('click', () => {
-    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-    document.documentElement.dataset.theme = next;
-    try { localStorage.setItem(THEME_KEY, next); } catch (error) { /* storage unavailable; theme just won't persist */ }
-    reflectTheme(next);
-  });
-});
+// Kendall's tau-b, pooled across every manager-season pair. Ties are common here
+// (both the predicted and actual scales repeat 1..N every season), so ties are
+// excluded from the concordant/discordant count and instead shrink the
+// denominator, per the standard tau-b definition.
+function kendallsTauB(pairs) {
+  let concordant = 0, discordant = 0, tiedPredicted = 0, tiedActual = 0;
+  for (let i = 0; i < pairs.length; i++) {
+    for (let j = i + 1; j < pairs.length; j++) {
+      const dPredicted = pairs[i].predicted - pairs[j].predicted;
+      const dActual = pairs[i].actual - pairs[j].actual;
+      if (dPredicted === 0 && dActual === 0) { tiedPredicted++; tiedActual++; continue; }
+      if (dPredicted === 0) { tiedPredicted++; continue; }
+      if (dActual === 0) { tiedActual++; continue; }
+      if (dPredicted * dActual > 0) concordant++; else discordant++;
+    }
+  }
+  const totalPairs = pairs.length * (pairs.length - 1) / 2;
+  const denominator = Math.sqrt((totalPairs - tiedPredicted) * (totalPairs - tiedActual));
+  return denominator === 0 ? null : (concordant - discordant) / denominator;
+}
 
-reflectTheme(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
+function meanAbsoluteRankError(pairs) {
+  if (pairs.length === 0) return null;
+  const total = pairs.reduce((sum, pair) => sum + Math.abs(pair.predicted - pair.actual), 0);
+  return total / pairs.length;
+}
+
+// Groups pairs by year (so "top 3" / "bottom 3" are relative to that season's own
+// field size) and reports how often a predicted top/bottom-3 manager landed there.
+function tierHitRate(pairs, zone) {
+  const pairsByYear = {};
+  pairs.forEach(pair => {
+    (pairsByYear[pair.year] ??= []).push(pair);
+  });
+  let hits = 0, total = 0;
+  Object.values(pairsByYear).forEach(yearPairs => {
+    const fieldSize = yearPairs.length;
+    yearPairs.forEach(({ predicted, actual }) => {
+      const predictedInZone = zone === 'top' ? predicted <= 3 : predicted >= fieldSize - 2;
+      if (!predictedInZone) return;
+      total += 1;
+      const actualInZone = zone === 'top' ? actual <= 3 : actual >= fieldSize - 2;
+      if (actualInZone) hits += 1;
+    });
+  });
+  return total === 0 ? null : hits / total;
+}
+
+function renderKPIRow(kpiEl) {
+  const captionEl = document.getElementById('kpi-caption');
+  Promise.all([
+    loadRankingCSV(kpiEl.dataset.tierSrc),
+    loadRankingCSV(kpiEl.dataset.resultsSrc),
+  ])
+    .then(([tierData, resultsData]) => {
+      const { overlapYears, pairs } = buildOverlapPairs(tierData, resultsData);
+      if (captionEl) {
+        captionEl.textContent = overlapYears.length
+          ? `Calculated from every season with both a tier list and a final result: ${overlapYears.join(', ')}.`
+          : 'No overlapping seasons yet.';
+      }
+      const metrics = [
+        { key: 'tau', value: kendallsTauB(pairs) },
+        { key: 'mae', value: meanAbsoluteRankError(pairs) },
+        { key: 'top3', value: tierHitRate(pairs, 'top') },
+        { key: 'bottom3', value: tierHitRate(pairs, 'bottom') },
+      ];
+      kpiEl.innerHTML = metrics.map(({ key, value }) => {
+        const info = kpiInfo[key];
+        const tipId = `kpi-tip-${key}`;
+        const display = value == null ? '\u2014' : info.format(value);
+        return `<div class="kpi-tile" tabindex="0">
+          <p class="kpi-value">${display}</p>
+          <p class="kpi-label">${info.label}<button type="button" class="kpi-info" aria-describedby="${tipId}" aria-label="What does ${info.label} mean?">?</button></p>
+          <span role="tooltip" id="${tipId}" class="kpi-tooltip">${info.tip}</span>
+        </div>`;
+      }).join('');
+    })
+    .catch(error => {
+      console.error(error);
+      kpiEl.innerHTML = '<p>Unable to load KPI data.</p>';
+      if (captionEl) captionEl.textContent = '';
+    });
+}
+
+const kpiRowEl = document.getElementById('kpi-row');
+if (kpiRowEl) renderKPIRow(kpiRowEl);
