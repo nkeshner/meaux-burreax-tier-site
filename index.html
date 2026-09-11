@@ -32,10 +32,35 @@
         <p class="eyebrow">History</p>
         <h2 id="ranking-history-title">Tier-list rankings over time</h2>
         <div class="ranking-layout">
-          <div id="ranking-chart" class="ranking-chart" aria-live="polite"></div>
+          <div
+            id="ranking-chart"
+            class="ranking-chart"
+            data-src="assets/data/tier-rankings.csv"
+            data-title="Meaux Burreax pre-season tier rankings from 2024 to 2026"
+            data-description="Line chart showing each manager's pre-season tier rank, where 1 is the highest position, across the 2024, 2025, and 2026 pre-season tier lists."
+            aria-live="polite"
+          ></div>
           <section class="ranking-average" aria-labelledby="ranking-average-title">
             <h3 id="ranking-average-title">Average placement</h3>
             <div id="ranking-average-table"></div>
+          </section>
+        </div>
+      </section>
+      <section class="content-wrap ranking-history" aria-labelledby="results-history-title">
+        <p class="eyebrow">History</p>
+        <h2 id="results-history-title">Actual season results over time</h2>
+        <div class="ranking-layout">
+          <div
+            id="results-chart"
+            class="ranking-chart"
+            data-src="assets/data/season-results.csv"
+            data-title="Meaux Burreax actual season results from 2024 to 2026"
+            data-description="Line chart showing each manager's actual final season standing, where 1 is the highest position, across the 2024, 2025, and 2026 seasons."
+            aria-live="polite"
+          ></div>
+          <section class="ranking-average" aria-labelledby="results-average-title">
+            <h3 id="results-average-title">Average placement</h3>
+            <div id="results-average-table"></div>
           </section>
         </div>
       </section>
