@@ -314,6 +314,174 @@ function renderKPIRow(kpiEl) {
 const kpiRowEl = document.getElementById('kpi-row');
 if (kpiRowEl) renderKPIRow(kpiRowEl);
 
+// ---- Manager Deep Dive: per-manager bar (actual) + dashed line (preseason) chart ----
+// Lightens or darkens a hex color toward white/black by `amount` (0-1), used to
+// give the preseason dashed line a distinct-but-related shade of a manager's
+// bar color so both read clearly on the same chart.
+function shadeColor(hex, amount) {
+  const value = hex.replace('#', '');
+  const num = parseInt(value, 16);
+  const r = (num >> 16) & 255, g = (num >> 8) & 255, b = num & 255;
+  const target = amount >= 0 ? 255 : 0;
+  const mix = channel => channel + (target - channel) * Math.abs(amount);
+  return '#' + [mix(r), mix(g), mix(b)].map(c => Math.round(c).toString(16).padStart(2, '0')).join('');
+}
+
+function renderMemberChart({ chartEl, name, tierData, resultsData }) {
+  const width = 760, height = 360, left = 46, right = 24, top = 24, bottom = 46;
+  const plotRight = width - right, plotBottom = height - bottom;
+  const years = Array.from(new Set([...resultsData.years, ...tierData.years])).sort();
+  const maxRank = Math.max(resultsData.rankingData.length, tierData.rankingData.length);
+  const bandWidth = (plotRight - left) / years.length;
+  const y = rank => top + (rank - 1) * ((plotBottom - top) / (maxRank - 1 || 1));
+
+  const barColor = managerColors[name] ?? '#94a3b8';
+  const lineColor = shadeColor(barColor, 0.55);
+
+  const tierManager = tierData.rankingData.find(manager => manager.name === name);
+  const resultsManager = resultsData.rankingData.find(manager => manager.name === name);
+
+  const grid = Array.from({ length: maxRank }, (_, index) => {
+    const rank = index + 1;
+    return `<line class="chart-grid" x1="${left}" x2="${plotRight}" y1="${y(rank)}" y2="${y(rank)}"/>`;
+  }).join('');
+
+  const bars = years.map((year, index) => {
+    const resultIndex = resultsData.years.indexOf(year);
+    const actual = resultIndex === -1 ? null : resultsManager?.ranks[resultIndex];
+    if (actual == null) return '';
+    const barX = left + index * bandWidth + bandWidth * 0.24;
+    const barWidth = bandWidth * 0.52;
+    const barTop = y(actual);
+    return `<rect class="member-bar" x="${barX}" y="${barTop}" width="${barWidth}" height="${plotBottom - barTop}" fill="${barColor}"><title>${year}: actual finish ${actual}</title></rect>`;
+  }).join('');
+
+  const linePoints = years.map((year, index) => {
+    const tierIndex = tierData.years.indexOf(year);
+    const predicted = tierIndex === -1 ? null : tierManager?.ranks[tierIndex];
+    if (predicted == null) return null;
+    return { x: left + index * bandWidth + bandWidth / 2, y: y(predicted), year, predicted };
+  }).filter(Boolean);
+
+  const linePath = linePoints.length > 1
+    ? linePoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x},${point.y}`).join(' ')
+    : '';
+  const lineDots = linePoints.map(point => `<circle class="member-line-dot" cx="${point.x}" cy="${point.y}" r="4.5" fill="${lineColor}"><title>${point.year}: preseason tier rank ${point.predicted}</title></circle>`).join('');
+
+  const xLabels = years.map((year, index) => `<text class="chart-axis-text" x="${left + index * bandWidth + bandWidth / 2}" y="${plotBottom + 30}" text-anchor="middle">${year}</text>`).join('');
+
+  chartEl.innerHTML = `
+    <div class="member-chart-head">
+      <span class="member-legend-item"><span class="member-swatch" style="--swatch-color:${barColor}"></span>Actual finish</span>
+      <span class="member-legend-item"><span class="member-swatch member-swatch--line" style="--swatch-color:${lineColor}"></span>Preseason tier rank</span>
+    </div>
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${name}'s actual finish by year, shown as bars, against ${name}'s preseason tier rank, shown as a dashed line.">
+      ${grid}
+      ${bars}
+      ${linePath ? `<path class="member-line" d="${linePath}" stroke="${lineColor}"></path>` : ''}
+      ${lineDots}
+      ${xLabels}
+      <text class="chart-axis-title" x="${(left + plotRight) / 2}" y="${height - 6}" text-anchor="middle">Year</text>
+      <text class="chart-axis-title" transform="translate(16 ${(top + plotBottom) / 2}) rotate(-90)" text-anchor="middle">Rank</text>
+    </svg>`;
+}
+
+// Average actual placement (all seasons with a result), plus average and average
+// absolute delta (actual minus preseason rank) across seasons where both exist.
+function computeMemberMetrics(name, tierData, resultsData) {
+  const tierManager = tierData.rankingData.find(manager => manager.name === name);
+  const resultsManager = resultsData.rankingData.find(manager => manager.name === name);
+
+  const knownActual = (resultsManager?.ranks ?? []).filter(rank => rank != null);
+  const avgActual = knownActual.length ? knownActual.reduce((sum, rank) => sum + rank, 0) / knownActual.length : null;
+
+  const overlapYears = tierData.years.filter(year => resultsData.years.includes(year));
+  const deltas = [];
+  overlapYears.forEach(year => {
+    const tierIndex = tierData.years.indexOf(year);
+    const resultIndex = resultsData.years.indexOf(year);
+    const predicted = tierManager?.ranks[tierIndex];
+    const actual = resultsManager?.ranks[resultIndex];
+    if (predicted == null || actual == null) return;
+    deltas.push(actual - predicted);
+  });
+  const avgDelta = deltas.length ? deltas.reduce((sum, delta) => sum + delta, 0) / deltas.length : null;
+  const avgAbsDelta = deltas.length ? deltas.reduce((sum, delta) => sum + Math.abs(delta), 0) / deltas.length : null;
+
+  let verdict = 'Not enough data';
+  if (avgDelta != null) {
+    const magnitude = Math.abs(avgDelta);
+    const direction = avgDelta > 0 ? 'Bust' : avgDelta < 0 ? 'Overperformer' : null;
+    if (magnitude <= 1 || !direction) verdict = 'Meets Expectations';
+    else if (magnitude <= 2.5) verdict = `Slight ${direction}`;
+    else if (magnitude <= 4) verdict = direction;
+    else verdict = `Massive ${direction}`;
+  }
+
+  return { avgActual, avgDelta, avgAbsDelta, verdict };
+}
+
+function renderMemberMetrics(metricsEl, name, tierData, resultsData) {
+  const { avgActual, avgDelta, avgAbsDelta, verdict } = computeMemberMetrics(name, tierData, resultsData);
+  const formatSigned = value => value == null ? '\u2014' : `${value > 0 ? '+' : ''}${value.toFixed(2)}`;
+  const rows = [
+    ['Average Actual Placement', avgActual != null ? avgActual.toFixed(2) : '\u2014'],
+    ['Average Delta (Actual \u2212 Expected)', formatSigned(avgDelta)],
+    ['Average Absolute Delta', avgAbsDelta != null ? avgAbsDelta.toFixed(2) : '\u2014'],
+  ];
+  const verdictClass = `member-verdict--${verdict.toLowerCase().replace(/\s+/g, '-')}`;
+  metricsEl.innerHTML = `
+    <h3>${name}</h3>
+    <div class="member-metrics-table">
+      ${rows.map(([label, value]) => `<div class="member-metric-row"><span>${label}</span><strong>${value}</strong></div>`).join('')}
+    </div>
+    <p class="member-verdict ${verdictClass}">${verdict}</p>`;
+}
+
+function initMemberExplorer() {
+  const buttonsEl = document.getElementById('member-buttons');
+  const chartEl = document.getElementById('member-chart');
+  const metricsEl = document.getElementById('member-metrics');
+  if (!buttonsEl || !chartEl || !metricsEl) return;
+
+  Promise.all([
+    loadRankingCSV(buttonsEl.dataset.tierSrc),
+    loadRankingCSV(buttonsEl.dataset.resultsSrc),
+  ])
+    .then(([tierData, resultsData]) => {
+      const names = tierData.rankingData.map(manager => manager.name);
+
+      function selectMember(name) {
+        buttonsEl.querySelectorAll('.member-button').forEach(button => {
+          const isActive = button.dataset.name === name;
+          button.classList.toggle('is-active', isActive);
+          button.setAttribute('aria-pressed', String(isActive));
+        });
+        renderMemberChart({ chartEl, name, tierData, resultsData });
+        renderMemberMetrics(metricsEl, name, tierData, resultsData);
+      }
+
+      buttonsEl.innerHTML = names.map(name => {
+        const color = managerColors[name] ?? '#94a3b8';
+        return `<button type="button" class="member-button" data-name="${name}" aria-pressed="false" style="--member-color:${color}">${name}</button>`;
+      }).join('');
+
+      buttonsEl.addEventListener('click', event => {
+        const button = event.target.closest('.member-button');
+        if (!button) return;
+        selectMember(button.dataset.name);
+      });
+
+      selectMember(names[0]);
+    })
+    .catch(error => {
+      console.error(error);
+      buttonsEl.innerHTML = '<p>Unable to load manager data.</p>';
+    });
+}
+
+initMemberExplorer();
+
 // Light/dark toggle. The initial theme is already applied by a small inline
 // script in <head> (before first paint, reading the same storage key) so
 // there's no flash of the wrong theme; this just wires up the button click

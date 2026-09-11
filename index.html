@@ -95,6 +95,24 @@
             </section>
           </div>
         </div>
+        <div class="chart-block member-explorer">
+          <div class="chart-block__head">
+            <h2 class="chart-title" id="member-history-title">Manager Deep Dive</h2>
+            <p class="chart-subtitle">Preseason tier rank vs. actual finish &middot; pick a manager</p>
+          </div>
+          <div
+            id="member-buttons"
+            class="member-buttons"
+            role="group"
+            aria-label="Choose a manager to inspect"
+            data-tier-src="assets/data/tier-rankings.csv"
+            data-results-src="assets/data/season-results.csv"
+          ></div>
+          <div class="ranking-layout member-layout">
+            <div id="member-chart" class="ranking-chart member-chart" aria-live="polite"></div>
+            <section class="member-panel" id="member-metrics" aria-live="polite" aria-label="Selected manager's metrics"></section>
+          </div>
+        </div>
       </section>
     </main>
     <footer class="site-footer"><div class="content-wrap"><p>Meaux Burreax: Tiers for Fears.</p></div></footer>
