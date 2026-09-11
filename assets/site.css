@@ -126,6 +126,28 @@ h3 { margin-top: 2rem; font-size: 1.15rem; letter-spacing: .02em; }
 .source-image img { display: block; max-width: 100%; height: auto; margin: auto; border-radius: .3rem; border: 1px solid var(--line); }
 
 /* ---------------------------------------------------------------------
+   KPI tiles: pre-season tier list accuracy, shown above the history
+   charts. Always exactly four columns, one row — never wraps, even on
+   narrow screens, since a partial second row would look broken here.
+--------------------------------------------------------------------- */
+.kpi-section { padding-top: 0; padding-bottom: 1.5rem; }
+.kpi-caption { margin: .35rem 0 1.25rem; max-width: 42rem; color: var(--muted); font-family: "PT Serif", Georgia, serif; font-size: .95rem; }
+.kpi-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; }
+.kpi-tile { position: relative; min-width: 0; padding: 1rem .85rem 1.15rem; background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--accent); border-radius: .3rem; }
+.kpi-value { margin: 0; overflow-wrap: break-word; color: var(--ink); font-family: "Oswald", sans-serif; font-size: clamp(1.15rem, 4vw, 1.75rem); font-weight: 700; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.kpi-label { display: flex; align-items: center; gap: .35rem; margin: .4rem 0 0; color: var(--muted); font-family: "Oswald", sans-serif; font-size: .68rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+.kpi-info { display: inline-flex; align-items: center; justify-content: center; flex: none; width: .95rem; height: .95rem; padding: 0; color: var(--accent); background: transparent; border: 1px solid var(--accent); border-radius: 50%; font-family: "Oswald", sans-serif; font-size: .6rem; font-weight: 700; text-transform: none; letter-spacing: 0; cursor: help; }
+.kpi-info:hover, .kpi-info:focus-visible { color: var(--accent-ink); background: var(--accent); }
+.kpi-tooltip { position: absolute; z-index: 1; left: .5rem; right: .5rem; bottom: calc(100% + .5rem); padding: .65rem .75rem; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: .3rem; box-shadow: 0 .6rem 1.4rem var(--shadow); font-family: "PT Serif", Georgia, serif; font-size: .82rem; line-height: 1.45; text-transform: none; letter-spacing: 0; opacity: 0; visibility: hidden; transform: translateY(.25rem); transition: opacity .14s ease, transform .14s ease, visibility .14s; pointer-events: none; }
+.kpi-tile:hover .kpi-tooltip, .kpi-tile:focus-within .kpi-tooltip { opacity: 1; visibility: visible; transform: translateY(0); }
+@media (max-width: 30rem) {
+  .kpi-row { gap: .4rem; }
+  .kpi-tile { padding: .75rem .5rem .9rem; }
+  .kpi-value { font-size: 1.05rem; }
+  .kpi-label { font-size: .58rem; gap: .25rem; }
+}
+
+/* ---------------------------------------------------------------------
    Charts: two compact, matched blocks meant to be read in tandem.
    Each block carries its own slim title bar directly above its chart,
    rather than a large standalone page heading.
