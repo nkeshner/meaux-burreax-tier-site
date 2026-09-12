@@ -101,6 +101,7 @@ h3 { margin-top: 2rem; font-size: 1.15rem; letter-spacing: .02em; }
   text-decoration: none;
 }
 .button:hover { background: var(--accent-strong); color: var(--accent-ink); }
+.hero-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin: 0; }
 
 .library-list { display: grid; gap: 1rem; margin-top: 2.5rem; }
 .library-item { display: block; padding: 1.25rem; color: inherit; background: var(--surface); border: 1px solid var(--line); border-radius: .3rem; text-decoration: none; }
@@ -245,11 +246,14 @@ h3 { margin-top: 2rem; font-size: 1.15rem; letter-spacing: .02em; }
 }
 
 /* ---------------------------------------------------------------------
-   Manager Profiles page: pick a manager (reuses .member-buttons above),
-   then a square profile photo with the performance verdict overlaid on
-   the photo itself, alongside a full career stats table.
+   Manager Profiles page: pick a manager (reuses .member-buttons above).
+   Left column is the square profile photo (performance verdict overlaid
+   directly on the photo) plus a small "Hardware" card of championship/
+   playoff counts underneath it, balancing the taller stats card on the
+   right, which holds the rest of the career numbers.
 --------------------------------------------------------------------- */
 .profile-layout { display: grid; grid-template-columns: minmax(0, 20rem) minmax(0, 1fr); gap: clamp(1.5rem, 4vw, 3rem); align-items: start; }
+.profile-photo-col { display: flex; flex-direction: column; gap: 1rem; }
 .profile-photo {
   position: relative;
   aspect-ratio: 1 / 1;
@@ -259,23 +263,28 @@ h3 { margin-top: 2rem; font-size: 1.15rem; letter-spacing: .02em; }
   border-radius: .35rem;
 }
 .profile-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* The verdict band occupies roughly a quarter of the photo's height, so it
+   reads as a scoreboard-style caption rather than a small caption line. */
 .profile-status {
   position: absolute; left: 0; right: 0; bottom: 0;
+  height: 26%;
   margin: 0;
-  padding: 1.5rem .9rem .9rem;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, .78) 60%);
-  color: #f4f1e6;
-  font: 700 1.05rem/1.25 "Oswald", sans-serif;
-  letter-spacing: .06em;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 .9rem;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, .48) 30%, rgba(0, 0, 0, .94) 100%);
+  color: #f7f4ea;
+  font: 800 1.9rem/1.05 "Oswald", sans-serif;
+  letter-spacing: .03em;
   text-transform: uppercase;
   text-align: center;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, .95), 0 4px 16px rgba(0, 0, 0, .8), 0 0 28px rgba(0, 0, 0, .6);
 }
 .profile-status--slight-bust, .profile-status--bust, .profile-status--massive-bust { color: #ffb3a0; }
 .profile-status--slight-overperformer, .profile-status--overperformer, .profile-status--massive-overperformer { color: #b8f0ac; }
-.profile-status--meets-expectations { color: #f4f1e6; }
-.profile-status--not-enough-data { color: #cfd6c8; }
+.profile-status--meets-expectations { color: #f7f4ea; }
+.profile-status--not-enough-data { color: #d7dccf; }
 
-.profile-stats {
+.profile-hardware, .profile-stats {
   padding: 1.25rem 1.4rem 1.5rem;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -283,7 +292,7 @@ h3 { margin-top: 2rem; font-size: 1.15rem; letter-spacing: .02em; }
   border-radius: .35rem;
   box-sizing: border-box;
 }
-.profile-stats h3 { margin: 0 0 1.1rem; color: var(--accent); font-size: 1.3rem; }
+.profile-hardware h3, .profile-stats h3 { margin: 0 0 1.1rem; color: var(--accent); font-size: 1.3rem; }
 .profile-stats-table { display: grid; gap: .55rem; }
 .profile-stat-row { display: flex; justify-content: space-between; align-items: baseline; gap: .75rem; padding-bottom: .55rem; border-bottom: 1px solid var(--line); font: 1rem/1.4 "PT Serif", Georgia, serif; }
 .profile-stat-row:last-child { border-bottom: none; padding-bottom: 0; }
@@ -291,10 +300,11 @@ h3 { margin-top: 2rem; font-size: 1.15rem; letter-spacing: .02em; }
 .profile-stat-row strong { color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
 @media (max-width: 40rem) {
   .profile-layout { grid-template-columns: 1fr; }
-  .profile-photo { max-width: 20rem; margin: 0 auto; }
+  .profile-photo-col { max-width: 20rem; margin: 0 auto; width: 100%; }
 }
 @media (max-width: 30rem) {
-  .profile-stats { padding: 1rem 1rem 1.25rem; }
+  .profile-status { font-size: 1.5rem; height: 24%; }
+  .profile-hardware, .profile-stats { padding: 1rem 1rem 1.25rem; }
 }
 
 .site-footer { padding: 1.5rem 0; color: var(--muted); border-top: 1px solid var(--line); font: .8rem/1.5 "Oswald", sans-serif; letter-spacing: .04em; }

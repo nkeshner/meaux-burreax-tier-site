@@ -126,7 +126,7 @@ function renderRankingChart({ chartEl, averageEl, years, rankingData, title, des
     const avatarCenter = avatarX + avatarSize / 2;
     const knownRanks = manager.ranks.filter(rank => rank != null).join(', ');
 
-    return `<g class="chart-series" data-manager="${manager.name}" tabindex="0" role="group" aria-label="${manager.name}: ranks ${knownRanks}"><defs><clipPath id="${avatarId}"><circle cx="${avatarCenter}" cy="${end.y}" r="${avatarSize / 2}"></circle></clipPath></defs>${path ? `<path class="chart-line" d="${path}" style="stroke:${color}"></path><path class="chart-hit" d="${path}"></path>` : ''}${circles}<text class="chart-name" x="${left - 18}" y="${end.y + 8}" text-anchor="end" style="fill:${color}">${manager.name}</text><circle class="chart-avatar-shell" cx="${avatarCenter}" cy="${end.y}" r="${avatarSize / 2 + 3}" style="stroke:${color}"></circle><image class="chart-avatar" href="assets/profiles/${profileImages[manager.name]}" x="${avatarX}" y="${end.y - avatarSize / 2}" width="${avatarSize}" height="${avatarSize}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${avatarId})"></image></g>`;
+    return `<g class="chart-series" data-manager="${manager.name}" tabindex="0" role="group" aria-label="${manager.name}: ranks ${knownRanks}"><defs><clipPath id="${avatarId}"><circle cx="${avatarCenter}" cy="${end.y}" r="${avatarSize / 2}"></circle></clipPath></defs>${path ? `<path class="chart-line" d="${path}" style="stroke:${color}"></path><path class="chart-hit" d="${path}"></path>` : ''}${circles}<text class="chart-name" x="${left - 18}" y="${end.y}" text-anchor="end" dominant-baseline="middle" style="fill:${color}">${manager.name}</text><circle class="chart-avatar-shell" cx="${avatarCenter}" cy="${end.y}" r="${avatarSize / 2 + 3}" style="stroke:${color}"></circle><image class="chart-avatar" href="assets/profiles/${profileImages[manager.name]}" x="${avatarX}" y="${end.y - avatarSize / 2}" width="${avatarSize}" height="${avatarSize}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${avatarId})"></image></g>`;
   }).join('');
 
   chartEl.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="${chartEl.id}-title ${chartEl.id}-description"><title id="${chartEl.id}-title">${title}</title><desc id="${chartEl.id}-description">${description}</desc>${grid}${xLabels}<text class="chart-axis-title" x="${(left + plotRight) / 2}" y="${height - 6}" text-anchor="middle">Year</text><text class="chart-axis-title" transform="translate(22 ${(top + height - bottom) / 2}) rotate(-90)" text-anchor="middle">Rank</text>${lines}</svg>`;
@@ -518,13 +518,17 @@ function formatRecord(w, l, t) {
   return `${w}-${l}-${t}`;
 }
 
-// Combines wins/losses/ties/points-for/points-against/season-results into one
-// career-stats object for a single manager. Every input is a parsed CSV
-// ({ years, rankingData }) sharing the same year columns, so a given year
-// index lines up across all of them; a year is skipped entirely if that
-// manager has no win/loss/tie record for it (e.g. before they joined).
+// Combines wins/losses/ties/points-for/points-against/season-results/
+// reg-season-rankings into one career-stats object for a single manager.
+// Each dataset is a parsed CSV ({ years, rankingData }); rather than assume
+// every CSV shares identical year columns, each year is looked up by its own
+// label in each dataset, so mismatched year ranges (e.g. a regular-season
+// file that doesn't go back as far as the results file) degrade gracefully
+// instead of silently misaligning. A season is skipped entirely for a
+// manager if they have no win/loss/tie record for it (e.g. before they
+// joined the league).
 function computeProfileStats(name, datasets) {
-  const { winsData, lossesData, tiesData, pointsForData, pointsAgainstData, resultsData } = datasets;
+  const { winsData, lossesData, tiesData, pointsForData, pointsAgainstData, resultsData, regSeasonData } = datasets;
   const years = resultsData.years;
   const wins = winsData.rankingData.find(manager => manager.name === name);
   const losses = lossesData.rankingData.find(manager => manager.name === name);
@@ -532,9 +536,11 @@ function computeProfileStats(name, datasets) {
   const pointsFor = pointsForData.rankingData.find(manager => manager.name === name);
   const pointsAgainst = pointsAgainstData.rankingData.find(manager => manager.name === name);
   const results = resultsData.rankingData.find(manager => manager.name === name);
+  const regSeason = regSeasonData?.rankingData.find(manager => manager.name === name);
 
   let totalWins = 0, totalLosses = 0, totalTies = 0, totalPointsFor = 0, totalPointsAgainst = 0;
   let bestFinish = null, worstFinish = null;
+  let bestRegSeasonFinish = null, worstRegSeasonFinish = null;
   let championships = 0, finalsAppearances = 0, playoffAppearances = 0;
   let bestSeason = null, worstSeason = null; // { w, l, t, winPct }
   let bestSeasonPPG = null, worstSeasonPPG = null;
@@ -543,6 +549,8 @@ function computeProfileStats(name, datasets) {
     const w = wins?.ranks[index], l = losses?.ranks[index], t = ties?.ranks[index];
     const pointsForYear = pointsFor?.ranks[index], pointsAgainstYear = pointsAgainst?.ranks[index];
     const rank = results?.ranks[index];
+    const regSeasonIndex = regSeasonData ? regSeasonData.years.indexOf(year) : -1;
+    const regSeasonRank = regSeasonIndex === -1 ? null : regSeason?.ranks[regSeasonIndex];
     if (w == null || l == null || t == null) return; // manager had no season this year
 
     const games = w + l + t;
@@ -569,7 +577,15 @@ function computeProfileStats(name, datasets) {
       if (worstFinish == null || rank > worstFinish) worstFinish = rank;
       if (rank === 1) championships += 1;
       if (rank <= 2) finalsAppearances += 1;
-      if (rank <= 4) playoffAppearances += 1;
+      // The league expanded its playoff field after the 2022 season: top 4
+      // made it in 2022, top 6 every year since.
+      const playoffCutoff = Number(year) === 2022 ? 4 : 6;
+      if (rank <= playoffCutoff) playoffAppearances += 1;
+    }
+
+    if (regSeasonRank != null) {
+      if (bestRegSeasonFinish == null || regSeasonRank < bestRegSeasonFinish) bestRegSeasonFinish = regSeasonRank;
+      if (worstRegSeasonFinish == null || regSeasonRank > worstRegSeasonFinish) worstRegSeasonFinish = regSeasonRank;
     }
   });
 
@@ -588,6 +604,8 @@ function computeProfileStats(name, datasets) {
     avgPointsAgainst,
     bestFinish,
     worstFinish,
+    bestRegSeasonFinish,
+    worstRegSeasonFinish,
     bestRecord: bestSeason ? formatRecord(bestSeason.w, bestSeason.l, bestSeason.t) : null,
     worstRecord: worstSeason ? formatRecord(worstSeason.w, worstSeason.l, worstSeason.t) : null,
     bestSeasonPPG,
@@ -604,6 +622,24 @@ function renderProfilePhoto(photoEl, name, verdict) {
     : '';
 }
 
+// Championships / Finals / Playoff appearances get their own small card
+// directly under the photo, so the photo's height is balanced by something
+// on the left instead of leaving the right-hand stats table to do all the
+// visual work.
+function renderProfileHardware(hardwareEl, name, stats) {
+  const color = managerColors[name] ?? '#94a3b8';
+  const rows = [
+    ['Championships', stats.championships],
+    ['Finals Appearances', stats.finalsAppearances],
+    ['Playoff Appearances', stats.playoffAppearances],
+  ];
+  hardwareEl.innerHTML = `
+    <h3 style="color:${color}">Hardware</h3>
+    <div class="profile-stats-table">
+      ${rows.map(([label, value]) => `<div class="profile-stat-row"><span>${label}</span><strong>${value}</strong></div>`).join('')}
+    </div>`;
+}
+
 function renderProfileStats(statsEl, name, stats) {
   const color = managerColors[name] ?? '#94a3b8';
   const formatPct = value => value == null ? '\u2014' : `${(value * 100).toFixed(1)}%`;
@@ -612,13 +648,12 @@ function renderProfileStats(statsEl, name, stats) {
   const rows = [
     ['Win-Loss-Tie Record', stats.record],
     ['Win %', formatPct(stats.winPct)],
-    ['Championships', stats.championships],
-    ['Finals Appearances', stats.finalsAppearances],
-    ['Playoff Appearances', stats.playoffAppearances],
     ['Avg. Points per Game', formatPPG(stats.avgPointsFor)],
     ['Avg. Opponent Points per Game', formatPPG(stats.avgPointsAgainst)],
     ['Best Finish', formatFinish(stats.bestFinish)],
     ['Worst Finish', formatFinish(stats.worstFinish)],
+    ['Best Regular Season Finish', formatFinish(stats.bestRegSeasonFinish)],
+    ['Worst Regular Season Finish', formatFinish(stats.worstRegSeasonFinish)],
     ['Best Record', stats.bestRecord ?? '\u2014'],
     ['Worst Record', stats.worstRecord ?? '\u2014'],
     ['Best Season Points per Game', formatPPG(stats.bestSeasonPPG)],
@@ -634,6 +669,7 @@ function renderProfileStats(statsEl, name, stats) {
 function initProfileExplorer() {
   const buttonsEl = document.getElementById('profile-buttons');
   const photoEl = document.getElementById('profile-photo');
+  const hardwareEl = document.getElementById('profile-hardware');
   const statsEl = document.getElementById('profile-stats');
   if (!buttonsEl || !photoEl || !statsEl) return;
 
@@ -645,10 +681,11 @@ function initProfileExplorer() {
     loadRankingCSV(buttonsEl.dataset.tiesSrc),
     loadRankingCSV(buttonsEl.dataset.pointsForSrc),
     loadRankingCSV(buttonsEl.dataset.pointsAgainstSrc),
+    loadRankingCSV(buttonsEl.dataset.regSeasonSrc),
   ])
-    .then(([tierData, resultsData, winsData, lossesData, tiesData, pointsForData, pointsAgainstData]) => {
+    .then(([tierData, resultsData, winsData, lossesData, tiesData, pointsForData, pointsAgainstData, regSeasonData]) => {
       const names = tierData.rankingData.map(manager => manager.name);
-      const datasets = { winsData, lossesData, tiesData, pointsForData, pointsAgainstData, resultsData };
+      const datasets = { winsData, lossesData, tiesData, pointsForData, pointsAgainstData, resultsData, regSeasonData };
 
       function selectManager(name) {
         buttonsEl.querySelectorAll('.member-button').forEach(button => {
@@ -659,6 +696,7 @@ function initProfileExplorer() {
         const { verdict } = computeMemberMetrics(name, tierData, resultsData);
         renderProfilePhoto(photoEl, name, verdict);
         const stats = computeProfileStats(name, datasets);
+        if (hardwareEl) renderProfileHardware(hardwareEl, name, stats);
         renderProfileStats(statsEl, name, stats);
       }
 
