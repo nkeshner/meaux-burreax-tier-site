@@ -13,8 +13,8 @@
     </script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Browse Meaux Burreax pre-season fantasy football rankings by year.">
-    <title>Pre-Season Rankings · Meaux Burreax: Tiers for Fears</title>
+    <meta name="description" content="Career stats and records for every Meaux Burreax manager.">
+    <title>Manager Profiles · Meaux Burreax: Tiers for Fears</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -29,17 +29,33 @@
         <nav aria-label="Primary navigation">
           <ul class="site-nav">
             <li><a href="../index.html">Home</a></li>
-            <li><a aria-current="page" href="index.html">Pre-Season Rankings</a></li>
-            <li><a href="profiles.html">Manager Profiles</a></li>
+            <li><a href="index.html">Pre-Season Rankings</a></li>
+            <li><a aria-current="page" href="profiles.html">Manager Profiles</a></li>
           </ul>
         </nav><button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false"><span class="theme-toggle__icon" aria-hidden="true">☾</span><span class="theme-toggle__label">Dark</span></button>
       </div>
     </header>
-    <main id="main-content" class="content-wrap page-intro">
+    <main id="main-content" class="content-wrap page-intro profile-page">
       <p class="eyebrow">Archive</p>
-      <h1>Pre-Season Rankings</h1>
-      <p class="lede">Choose a season to read the complete Meaux Burreax tier list and team write-ups.</p>
-      <div id="library-list" class="library-list" aria-live="polite"></div>
+      <h1>Manager Profiles</h1>
+      <p class="lede">Pick a manager to see their career record, awards, and scoring history.</p>
+      <div
+        id="profile-buttons"
+        class="member-buttons"
+        role="group"
+        aria-label="Choose a manager to inspect"
+        data-tier-src="../assets/data/tier-rankings.csv"
+        data-results-src="../assets/data/season-results.csv"
+        data-wins-src="../assets/data/wins.csv"
+        data-losses-src="../assets/data/losses.csv"
+        data-ties-src="../assets/data/ties.csv"
+        data-points-for-src="../assets/data/points_for.csv"
+        data-points-against-src="../assets/data/points_against.csv"
+      ></div>
+      <div class="profile-layout">
+        <div id="profile-photo" class="profile-photo" aria-live="polite"></div>
+        <section id="profile-stats" class="profile-stats" aria-live="polite" aria-label="Selected manager's stats"></section>
+      </div>
     </main>
     <footer class="site-footer"><div class="content-wrap"><p>Meaux Burreax: Tiers for Fears.</p></div></footer>
   </body>

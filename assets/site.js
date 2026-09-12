@@ -506,6 +506,182 @@ function initMemberExplorer() {
 
 initMemberExplorer();
 
+// ---------------------------------------------------------------------------
+// Manager Profiles page: a photo (with performance status overlaid) plus a
+// full career stats table. Reuses the same .member-buttons/.member-button
+// picker as the Manager Deep Dive section above, and the same verdict
+// calculation from computeMemberMetrics, so "Massive Bust" etc. always means
+// the same thing everywhere on the site.
+// ---------------------------------------------------------------------------
+
+function formatRecord(w, l, t) {
+  return `${w}-${l}-${t}`;
+}
+
+// Combines wins/losses/ties/points-for/points-against/season-results into one
+// career-stats object for a single manager. Every input is a parsed CSV
+// ({ years, rankingData }) sharing the same year columns, so a given year
+// index lines up across all of them; a year is skipped entirely if that
+// manager has no win/loss/tie record for it (e.g. before they joined).
+function computeProfileStats(name, datasets) {
+  const { winsData, lossesData, tiesData, pointsForData, pointsAgainstData, resultsData } = datasets;
+  const years = resultsData.years;
+  const wins = winsData.rankingData.find(manager => manager.name === name);
+  const losses = lossesData.rankingData.find(manager => manager.name === name);
+  const ties = tiesData.rankingData.find(manager => manager.name === name);
+  const pointsFor = pointsForData.rankingData.find(manager => manager.name === name);
+  const pointsAgainst = pointsAgainstData.rankingData.find(manager => manager.name === name);
+  const results = resultsData.rankingData.find(manager => manager.name === name);
+
+  let totalWins = 0, totalLosses = 0, totalTies = 0, totalPointsFor = 0, totalPointsAgainst = 0;
+  let bestFinish = null, worstFinish = null;
+  let championships = 0, finalsAppearances = 0, playoffAppearances = 0;
+  let bestSeason = null, worstSeason = null; // { w, l, t, winPct }
+  let bestSeasonPPG = null, worstSeasonPPG = null;
+
+  years.forEach((year, index) => {
+    const w = wins?.ranks[index], l = losses?.ranks[index], t = ties?.ranks[index];
+    const pointsForYear = pointsFor?.ranks[index], pointsAgainstYear = pointsAgainst?.ranks[index];
+    const rank = results?.ranks[index];
+    if (w == null || l == null || t == null) return; // manager had no season this year
+
+    const games = w + l + t;
+    totalWins += w;
+    totalLosses += l;
+    totalTies += t;
+    if (pointsForYear != null) totalPointsFor += pointsForYear;
+    if (pointsAgainstYear != null) totalPointsAgainst += pointsAgainstYear;
+
+    if (games > 0) {
+      const winPct = (w + 0.5 * t) / games;
+      if (bestSeason == null || winPct > bestSeason.winPct) bestSeason = { w, l, t, winPct };
+      if (worstSeason == null || winPct < worstSeason.winPct) worstSeason = { w, l, t, winPct };
+
+      if (pointsForYear != null) {
+        const seasonPPG = pointsForYear / games;
+        if (bestSeasonPPG == null || seasonPPG > bestSeasonPPG) bestSeasonPPG = seasonPPG;
+        if (worstSeasonPPG == null || seasonPPG < worstSeasonPPG) worstSeasonPPG = seasonPPG;
+      }
+    }
+
+    if (rank != null) {
+      if (bestFinish == null || rank < bestFinish) bestFinish = rank;
+      if (worstFinish == null || rank > worstFinish) worstFinish = rank;
+      if (rank === 1) championships += 1;
+      if (rank <= 2) finalsAppearances += 1;
+      if (rank <= 4) playoffAppearances += 1;
+    }
+  });
+
+  const totalGames = totalWins + totalLosses + totalTies;
+  const winPct = totalGames > 0 ? (totalWins + 0.5 * totalTies) / totalGames : null;
+  const avgPointsFor = totalGames > 0 ? totalPointsFor / totalGames : null;
+  const avgPointsAgainst = totalGames > 0 ? totalPointsAgainst / totalGames : null;
+
+  return {
+    record: formatRecord(totalWins, totalLosses, totalTies),
+    winPct,
+    championships,
+    finalsAppearances,
+    playoffAppearances,
+    avgPointsFor,
+    avgPointsAgainst,
+    bestFinish,
+    worstFinish,
+    bestRecord: bestSeason ? formatRecord(bestSeason.w, bestSeason.l, bestSeason.t) : null,
+    worstRecord: worstSeason ? formatRecord(worstSeason.w, worstSeason.l, worstSeason.t) : null,
+    bestSeasonPPG,
+    worstSeasonPPG,
+  };
+}
+
+function renderProfilePhoto(photoEl, name, verdict) {
+  const image = profileImages[name];
+  const verdictClass = `profile-status--${verdict.toLowerCase().replace(/\s+/g, '-')}`;
+  photoEl.innerHTML = image
+    ? `<img src="../assets/profiles/${image}" alt="${name}'s profile photo">
+       <p class="profile-status ${verdictClass}">${verdict}</p>`
+    : '';
+}
+
+function renderProfileStats(statsEl, name, stats) {
+  const color = managerColors[name] ?? '#94a3b8';
+  const formatPct = value => value == null ? '\u2014' : `${(value * 100).toFixed(1)}%`;
+  const formatPPG = value => value == null ? '\u2014' : value.toFixed(1);
+  const formatFinish = value => value == null ? '\u2014' : `${value}${value === 1 ? 'st' : value === 2 ? 'nd' : value === 3 ? 'rd' : 'th'}`;
+  const rows = [
+    ['Win-Loss-Tie Record', stats.record],
+    ['Win %', formatPct(stats.winPct)],
+    ['Championships', stats.championships],
+    ['Finals Appearances', stats.finalsAppearances],
+    ['Playoff Appearances', stats.playoffAppearances],
+    ['Avg. Points per Game', formatPPG(stats.avgPointsFor)],
+    ['Avg. Opponent Points per Game', formatPPG(stats.avgPointsAgainst)],
+    ['Best Finish', formatFinish(stats.bestFinish)],
+    ['Worst Finish', formatFinish(stats.worstFinish)],
+    ['Best Record', stats.bestRecord ?? '\u2014'],
+    ['Worst Record', stats.worstRecord ?? '\u2014'],
+    ['Best Season Points per Game', formatPPG(stats.bestSeasonPPG)],
+    ['Worst Season Points per Game', formatPPG(stats.worstSeasonPPG)],
+  ];
+  statsEl.innerHTML = `
+    <h3 style="color:${color}">${name}</h3>
+    <div class="profile-stats-table">
+      ${rows.map(([label, value]) => `<div class="profile-stat-row"><span>${label}</span><strong>${value}</strong></div>`).join('')}
+    </div>`;
+}
+
+function initProfileExplorer() {
+  const buttonsEl = document.getElementById('profile-buttons');
+  const photoEl = document.getElementById('profile-photo');
+  const statsEl = document.getElementById('profile-stats');
+  if (!buttonsEl || !photoEl || !statsEl) return;
+
+  Promise.all([
+    loadRankingCSV(buttonsEl.dataset.tierSrc),
+    loadRankingCSV(buttonsEl.dataset.resultsSrc),
+    loadRankingCSV(buttonsEl.dataset.winsSrc),
+    loadRankingCSV(buttonsEl.dataset.lossesSrc),
+    loadRankingCSV(buttonsEl.dataset.tiesSrc),
+    loadRankingCSV(buttonsEl.dataset.pointsForSrc),
+    loadRankingCSV(buttonsEl.dataset.pointsAgainstSrc),
+  ])
+    .then(([tierData, resultsData, winsData, lossesData, tiesData, pointsForData, pointsAgainstData]) => {
+      const names = tierData.rankingData.map(manager => manager.name);
+      const datasets = { winsData, lossesData, tiesData, pointsForData, pointsAgainstData, resultsData };
+
+      function selectManager(name) {
+        buttonsEl.querySelectorAll('.member-button').forEach(button => {
+          const isActive = button.dataset.name === name;
+          button.classList.toggle('is-active', isActive);
+          button.setAttribute('aria-pressed', String(isActive));
+        });
+        const { verdict } = computeMemberMetrics(name, tierData, resultsData);
+        renderProfilePhoto(photoEl, name, verdict);
+        const stats = computeProfileStats(name, datasets);
+        renderProfileStats(statsEl, name, stats);
+      }
+
+      buttonsEl.innerHTML = names.map(name => {
+        const color = managerColors[name] ?? '#94a3b8';
+        return `<button type="button" class="member-button" data-name="${name}" aria-pressed="false" style="--member-color:${color}">${name}</button>`;
+      }).join('');
+
+      buttonsEl.addEventListener('click', event => {
+        const button = event.target.closest('.member-button');
+        if (!button) return;
+        selectManager(button.dataset.name);
+      });
+
+      selectManager(names[0]);
+    })
+    .catch(error => {
+      console.error(error);
+      buttonsEl.innerHTML = '<p>Unable to load manager data.</p>';
+    });
+}
+
+initProfileExplorer();
 
 // Light/dark toggle. The initial theme is already applied by a small inline
 // script in <head> (before first paint, reading the same storage key) so

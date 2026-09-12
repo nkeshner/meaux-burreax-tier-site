@@ -244,6 +244,59 @@ h3 { margin-top: 2rem; font-size: 1.15rem; letter-spacing: .02em; }
   .member-button { padding: .4rem .75rem; font-size: .7rem; }
 }
 
+/* ---------------------------------------------------------------------
+   Manager Profiles page: pick a manager (reuses .member-buttons above),
+   then a square profile photo with the performance verdict overlaid on
+   the photo itself, alongside a full career stats table.
+--------------------------------------------------------------------- */
+.profile-layout { display: grid; grid-template-columns: minmax(0, 20rem) minmax(0, 1fr); gap: clamp(1.5rem, 4vw, 3rem); align-items: start; }
+.profile-photo {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: .35rem;
+}
+.profile-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.profile-status {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  margin: 0;
+  padding: 1.5rem .9rem .9rem;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, .78) 60%);
+  color: #f4f1e6;
+  font: 700 1.05rem/1.25 "Oswald", sans-serif;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  text-align: center;
+}
+.profile-status--slight-bust, .profile-status--bust, .profile-status--massive-bust { color: #ffb3a0; }
+.profile-status--slight-overperformer, .profile-status--overperformer, .profile-status--massive-overperformer { color: #b8f0ac; }
+.profile-status--meets-expectations { color: #f4f1e6; }
+.profile-status--not-enough-data { color: #cfd6c8; }
+
+.profile-stats {
+  padding: 1.25rem 1.4rem 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
+  border-radius: .35rem;
+  box-sizing: border-box;
+}
+.profile-stats h3 { margin: 0 0 1.1rem; color: var(--accent); font-size: 1.3rem; }
+.profile-stats-table { display: grid; gap: .55rem; }
+.profile-stat-row { display: flex; justify-content: space-between; align-items: baseline; gap: .75rem; padding-bottom: .55rem; border-bottom: 1px solid var(--line); font: 1rem/1.4 "PT Serif", Georgia, serif; }
+.profile-stat-row:last-child { border-bottom: none; padding-bottom: 0; }
+.profile-stat-row span { color: var(--muted); }
+.profile-stat-row strong { color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+@media (max-width: 40rem) {
+  .profile-layout { grid-template-columns: 1fr; }
+  .profile-photo { max-width: 20rem; margin: 0 auto; }
+}
+@media (max-width: 30rem) {
+  .profile-stats { padding: 1rem 1rem 1.25rem; }
+}
+
 .site-footer { padding: 1.5rem 0; color: var(--muted); border-top: 1px solid var(--line); font: .8rem/1.5 "Oswald", sans-serif; letter-spacing: .04em; }
 .site-footer p { margin: 0; text-transform: uppercase; }
 @media (max-width: 30rem) {
