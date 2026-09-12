@@ -328,12 +328,13 @@ function shadeColor(hex, amount) {
 }
 
 function renderMemberChart({ chartEl, name, tierData, resultsData }) {
-  const width = 760, height = 360, left = 46, right = 24, top = 24, bottom = 46;
+  const width = 760, height = 360, left = 60, right = 24, top = 24, bottom = 58;
   const plotRight = width - right, plotBottom = height - bottom;
   const years = Array.from(new Set([...resultsData.years, ...tierData.years])).sort();
   const maxRank = Math.max(resultsData.rankingData.length, tierData.rankingData.length);
   const bandWidth = (plotRight - left) / years.length;
   const y = rank => top + (rank - 1) * ((plotBottom - top) / (maxRank - 1 || 1));
+  const minBarHeight = 4; // keeps a last-place finish visible as a sliver, distinct from "no data"
 
   const barColor = managerColors[name] ?? '#94a3b8';
   const lineColor = shadeColor(barColor, 0.55);
@@ -346,14 +347,22 @@ function renderMemberChart({ chartEl, name, tierData, resultsData }) {
     return `<line class="chart-grid" x1="${left}" x2="${plotRight}" y1="${y(rank)}" y2="${y(rank)}"/>`;
   }).join('');
 
+  // No manager-name labels crowd the left margin on this single-manager chart
+  // (unlike the two charts above), so there's room to number the rank axis.
+  const rankLabels = Array.from({ length: maxRank }, (_, index) => {
+    const rank = index + 1;
+    return `<text class="chart-axis-text" x="${left - 14}" y="${y(rank) + 5}" text-anchor="end">${rank}</text>`;
+  }).join('');
+
   const bars = years.map((year, index) => {
     const resultIndex = resultsData.years.indexOf(year);
     const actual = resultIndex === -1 ? null : resultsManager?.ranks[resultIndex];
     if (actual == null) return '';
     const barX = left + index * bandWidth + bandWidth * 0.24;
     const barWidth = bandWidth * 0.52;
-    const barTop = y(actual);
-    return `<rect class="member-bar" x="${barX}" y="${barTop}" width="${barWidth}" height="${plotBottom - barTop}" fill="${barColor}"><title>${year}: actual finish ${actual}</title></rect>`;
+    const barHeight = Math.max(plotBottom - y(actual), minBarHeight);
+    const barTop = plotBottom - barHeight;
+    return `<rect class="member-bar" x="${barX}" y="${barTop}" width="${barWidth}" height="${barHeight}" fill="${barColor}"><title>${year}: actual finish ${actual}</title></rect>`;
   }).join('');
 
   const linePoints = years.map((year, index) => {
@@ -377,17 +386,19 @@ function renderMemberChart({ chartEl, name, tierData, resultsData }) {
     </div>
     <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${name}'s actual finish by year, shown as bars, against ${name}'s preseason tier rank, shown as a dashed line.">
       ${grid}
+      ${rankLabels}
       ${bars}
       ${linePath ? `<path class="member-line" d="${linePath}" stroke="${lineColor}"></path>` : ''}
       ${lineDots}
       ${xLabels}
       <text class="chart-axis-title" x="${(left + plotRight) / 2}" y="${height - 6}" text-anchor="middle">Year</text>
-      <text class="chart-axis-title" transform="translate(16 ${(top + plotBottom) / 2}) rotate(-90)" text-anchor="middle">Rank</text>
+      <text class="chart-axis-title" transform="translate(14 ${(top + plotBottom) / 2}) rotate(-90)" text-anchor="middle">Rank</text>
     </svg>`;
 }
 
 // Average actual placement (all seasons with a result), plus average and average
-// absolute delta (actual minus preseason rank) across seasons where both exist.
+// absolute delta (expected minus actual, so positive = beat expectations) across
+// seasons where both a preseason rank and a result exist.
 function computeMemberMetrics(name, tierData, resultsData) {
   const tierManager = tierData.rankingData.find(manager => manager.name === name);
   const resultsManager = resultsData.rankingData.find(manager => manager.name === name);
@@ -403,7 +414,9 @@ function computeMemberMetrics(name, tierData, resultsData) {
     const predicted = tierManager?.ranks[tierIndex];
     const actual = resultsManager?.ranks[resultIndex];
     if (predicted == null || actual == null) return;
-    deltas.push(actual - predicted);
+    // Ranks count down from 1 (best), so "expected minus actual" is positive
+    // when a manager finishes better than predicted (a smaller actual rank).
+    deltas.push(predicted - actual);
   });
   const avgDelta = deltas.length ? deltas.reduce((sum, delta) => sum + delta, 0) / deltas.length : null;
   const avgAbsDelta = deltas.length ? deltas.reduce((sum, delta) => sum + Math.abs(delta), 0) / deltas.length : null;
@@ -411,7 +424,7 @@ function computeMemberMetrics(name, tierData, resultsData) {
   let verdict = 'Not enough data';
   if (avgDelta != null) {
     const magnitude = Math.abs(avgDelta);
-    const direction = avgDelta > 0 ? 'Bust' : avgDelta < 0 ? 'Overperformer' : null;
+    const direction = avgDelta > 0 ? 'Overperformer' : avgDelta < 0 ? 'Bust' : null;
     if (magnitude <= 1 || !direction) verdict = 'Meets Expectations';
     else if (magnitude <= 2.5) verdict = `Slight ${direction}`;
     else if (magnitude <= 4) verdict = direction;
@@ -423,25 +436,35 @@ function computeMemberMetrics(name, tierData, resultsData) {
 
 function renderMemberMetrics(metricsEl, name, tierData, resultsData) {
   const { avgActual, avgDelta, avgAbsDelta, verdict } = computeMemberMetrics(name, tierData, resultsData);
+  const color = managerColors[name] ?? '#94a3b8';
   const formatSigned = value => value == null ? '\u2014' : `${value > 0 ? '+' : ''}${value.toFixed(2)}`;
   const rows = [
     ['Average Actual Placement', avgActual != null ? avgActual.toFixed(2) : '\u2014'],
-    ['Average Delta (Actual \u2212 Expected)', formatSigned(avgDelta)],
+    ['Average Delta (Expected \u2212 Actual)', formatSigned(avgDelta)],
     ['Average Absolute Delta', avgAbsDelta != null ? avgAbsDelta.toFixed(2) : '\u2014'],
   ];
   const verdictClass = `member-verdict--${verdict.toLowerCase().replace(/\s+/g, '-')}`;
   metricsEl.innerHTML = `
-    <h3>${name}</h3>
+    <h3 style="color:${color}">${name}</h3>
     <div class="member-metrics-table">
       ${rows.map(([label, value]) => `<div class="member-metric-row"><span>${label}</span><strong>${value}</strong></div>`).join('')}
     </div>
     <p class="member-verdict ${verdictClass}">${verdict}</p>`;
 }
 
+function renderMemberProfile(profileEl, name) {
+  const color = managerColors[name] ?? '#94a3b8';
+  const image = profileImages[name];
+  profileEl.innerHTML = image
+    ? `<img class="member-avatar" src="assets/profiles/${image}" alt="${name}'s profile photo" style="border-color:${color}">`
+    : '';
+}
+
 function initMemberExplorer() {
   const buttonsEl = document.getElementById('member-buttons');
   const chartEl = document.getElementById('member-chart');
   const metricsEl = document.getElementById('member-metrics');
+  const profileEl = document.getElementById('member-profile');
   if (!buttonsEl || !chartEl || !metricsEl) return;
 
   Promise.all([
@@ -459,6 +482,7 @@ function initMemberExplorer() {
         });
         renderMemberChart({ chartEl, name, tierData, resultsData });
         renderMemberMetrics(metricsEl, name, tierData, resultsData);
+        if (profileEl) renderMemberProfile(profileEl, name);
       }
 
       buttonsEl.innerHTML = names.map(name => {
@@ -481,6 +505,7 @@ function initMemberExplorer() {
 }
 
 initMemberExplorer();
+
 
 // Light/dark toggle. The initial theme is already applied by a small inline
 // script in <head> (before first paint, reading the same storage key) so
