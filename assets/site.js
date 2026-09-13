@@ -119,6 +119,7 @@ function renderRankingChart({ chartEl, averageEl, years, rankingData, title, des
 
     const path = points.length > 1 ? smoothPath(points) : '';
     const circles = points.map(point => `<circle class="chart-point" cx="${point.x}" cy="${point.y}" r="4" style="stroke:${color}"></circle>`).join('');
+    const start = points[0];
     const end = points.at(-1);
     const avatarX = plotRight + 18;
     const avatarSize = 76;
@@ -126,7 +127,7 @@ function renderRankingChart({ chartEl, averageEl, years, rankingData, title, des
     const avatarCenter = avatarX + avatarSize / 2;
     const knownRanks = manager.ranks.filter(rank => rank != null).join(', ');
 
-    return `<g class="chart-series" data-manager="${manager.name}" tabindex="0" role="group" aria-label="${manager.name}: ranks ${knownRanks}"><defs><clipPath id="${avatarId}"><circle cx="${avatarCenter}" cy="${end.y}" r="${avatarSize / 2}"></circle></clipPath></defs>${path ? `<path class="chart-line" d="${path}" style="stroke:${color}"></path><path class="chart-hit" d="${path}"></path>` : ''}${circles}<text class="chart-name" x="${left - 18}" y="${end.y}" text-anchor="end" dominant-baseline="middle" style="fill:${color}">${manager.name}</text><circle class="chart-avatar-shell" cx="${avatarCenter}" cy="${end.y}" r="${avatarSize / 2 + 3}" style="stroke:${color}"></circle><image class="chart-avatar" href="assets/profiles/${profileImages[manager.name]}" x="${avatarX}" y="${end.y - avatarSize / 2}" width="${avatarSize}" height="${avatarSize}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${avatarId})"></image></g>`;
+    return `<g class="chart-series" data-manager="${manager.name}" tabindex="0" role="group" aria-label="${manager.name}: ranks ${knownRanks}"><defs><clipPath id="${avatarId}"><circle cx="${avatarCenter}" cy="${end.y}" r="${avatarSize / 2}"></circle></clipPath></defs>${path ? `<path class="chart-line" d="${path}" style="stroke:${color}"></path><path class="chart-hit" d="${path}"></path>` : ''}${circles}<text class="chart-name" x="${left - 18}" y="${start.y}" text-anchor="end" dominant-baseline="middle" style="fill:${color}">${manager.name}</text><circle class="chart-avatar-shell" cx="${avatarCenter}" cy="${end.y}" r="${avatarSize / 2 + 3}" style="stroke:${color}"></circle><image class="chart-avatar" href="assets/profiles/${profileImages[manager.name]}" x="${avatarX}" y="${end.y - avatarSize / 2}" width="${avatarSize}" height="${avatarSize}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${avatarId})"></image></g>`;
   }).join('');
 
   chartEl.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="${chartEl.id}-title ${chartEl.id}-description"><title id="${chartEl.id}-title">${title}</title><desc id="${chartEl.id}-description">${description}</desc>${grid}${xLabels}<text class="chart-axis-title" x="${(left + plotRight) / 2}" y="${height - 6}" text-anchor="middle">Year</text><text class="chart-axis-title" transform="translate(22 ${(top + height - bottom) / 2}) rotate(-90)" text-anchor="middle">Rank</text>${lines}</svg>`;
@@ -299,8 +300,7 @@ function renderKPIRow(kpiEl) {
         const display = value == null ? '\u2014' : info.format(value);
         return `<div class="kpi-tile">
           <p class="kpi-value">${display}</p>
-          <p class="kpi-label">${info.label}<button type="button" class="kpi-info" aria-describedby="${tipId}" aria-label="What does ${info.label} mean?">?</button></p>
-          <span role="tooltip" id="${tipId}" class="kpi-tooltip">${info.tip}</span>
+          <p class="kpi-label">${info.label}<button type="button" class="kpi-info" aria-describedby="${tipId}" aria-label="What does ${info.label} mean?">?</button><span role="tooltip" id="${tipId}" class="kpi-tooltip">${info.tip}</span></p>
         </div>`;
       }).join('');
     })
