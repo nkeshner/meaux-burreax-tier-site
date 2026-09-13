@@ -600,6 +600,8 @@ function computeProfileStats(name, datasets) {
     championships,
     finalsAppearances,
     playoffAppearances,
+    totalPointsFor,
+    totalPointsAgainst,
     avgPointsFor,
     avgPointsAgainst,
     bestFinish,
@@ -720,6 +722,126 @@ function initProfileExplorer() {
 }
 
 initProfileExplorer();
+
+// ---------------------------------------------------------------------------
+// All-Time Leaderboard page: one small table per career stat, each sorted
+// best-to-worst, with the top three managers shown alongside their photo.
+// Reuses computeProfileStats for most of the numbers; a couple of extra
+// career averages (final/regular-season/preseason rank) are computed here
+// with a small shared helper since they aren't part of that function's
+// win/loss/points-based math.
+// ---------------------------------------------------------------------------
+
+// Average of a manager's non-null values in a parsed ranking CSV (works for
+// any of the rank-shaped datasets: tier list, regular season, or results).
+function averageRank(data, name) {
+  if (!data) return null;
+  const manager = data.rankingData.find(entry => entry.name === name);
+  if (!manager) return null;
+  const known = manager.ranks.filter(rank => rank != null);
+  return known.length ? known.reduce((sum, rank) => sum + rank, 0) / known.length : null;
+}
+
+// Sorts leaderboard entries by value ('asc' = lowest value ranked best, e.g.
+// points allowed or average rank; 'desc' = highest value ranked best, e.g.
+// championships or points scored). Missing values always sort to the bottom;
+// ties break alphabetically so the order is stable and predictable.
+function sortLeaderboardEntries(entries, direction) {
+  return entries.slice().sort((a, b) => {
+    if (a.value == null && b.value == null) return a.name.localeCompare(b.name);
+    if (a.value == null) return 1;
+    if (b.value == null) return -1;
+    const diff = direction === 'asc' ? a.value - b.value : b.value - a.value;
+    return diff !== 0 ? diff : a.name.localeCompare(b.name);
+  });
+}
+
+function buildLeaderboardCard(spec, combinedStats) {
+  const entries = combinedStats.map(stats => ({ name: stats.name, value: spec.getValue(stats) }));
+  const sorted = sortLeaderboardEntries(entries, spec.sort);
+
+  const rows = sorted.map((entry, index) => {
+    const rank = index + 1;
+    const isTopThree = rank <= 3;
+    const color = managerColors[entry.name] ?? '#94a3b8';
+    const image = profileImages[entry.name];
+    const avatar = isTopThree && image
+      ? `<img class="leaderboard-avatar" src="../assets/profiles/${image}" alt="" style="border-color:${color}">`
+      : '';
+    const display = entry.value == null ? '\u2014' : spec.format(entry.value);
+    return `<div class="leaderboard-row leaderboard-row--${rank}" role="row">
+      <span class="leaderboard-rank" role="cell">${rank}</span>
+      <span class="leaderboard-member" role="rowheader">${avatar}<span class="leaderboard-name"${isTopThree ? ` style="color:${color}"` : ''}>${entry.name}</span></span>
+      <span class="leaderboard-value" role="cell">${display}</span>
+    </div>`;
+  }).join('');
+
+  return `<section class="leaderboard-card">
+    <h2 class="leaderboard-card__title">${spec.label}</h2>
+    <div class="leaderboard-table" role="table" aria-label="${spec.label} leaderboard">
+      <div class="leaderboard-head" role="row"><span role="columnheader">#</span><span role="columnheader">Manager</span><span role="columnheader">${spec.columnLabel}</span></div>
+      ${rows}
+    </div>
+  </section>`;
+}
+
+function initLeaderboard() {
+  const gridEl = document.getElementById('leaderboard-grid');
+  if (!gridEl) return;
+
+  Promise.all([
+    loadRankingCSV(gridEl.dataset.tierSrc),
+    loadRankingCSV(gridEl.dataset.resultsSrc),
+    loadRankingCSV(gridEl.dataset.winsSrc),
+    loadRankingCSV(gridEl.dataset.lossesSrc),
+    loadRankingCSV(gridEl.dataset.tiesSrc),
+    loadRankingCSV(gridEl.dataset.pointsForSrc),
+    loadRankingCSV(gridEl.dataset.pointsAgainstSrc),
+    loadRankingCSV(gridEl.dataset.regSeasonSrc),
+  ])
+    .then(([tierData, resultsData, winsData, lossesData, tiesData, pointsForData, pointsAgainstData, regSeasonData]) => {
+      const names = tierData.rankingData.map(manager => manager.name);
+      const datasets = { winsData, lossesData, tiesData, pointsForData, pointsAgainstData, resultsData, regSeasonData };
+
+      const combinedStats = names.map(name => ({
+        name,
+        ...computeProfileStats(name, datasets),
+        avgFinalRank: averageRank(resultsData, name),
+        avgRegSeasonRank: averageRank(regSeasonData, name),
+        avgPreseasonRank: averageRank(tierData, name),
+      }));
+
+      const formatCount = value => String(value);
+      const formatPct = value => `${(value * 100).toFixed(1)}%`;
+      const formatWhole = value => Math.round(value).toLocaleString();
+      const formatPPG = value => value.toFixed(1);
+      const formatRankAvg = value => value.toFixed(2);
+
+      const specs = [
+        { label: 'Championships', columnLabel: 'Titles', sort: 'desc', getValue: s => s.championships, format: formatCount },
+        { label: 'Finals Appearances', columnLabel: 'Finals', sort: 'desc', getValue: s => s.finalsAppearances, format: formatCount },
+        { label: 'Playoff Appearances', columnLabel: 'Playoffs', sort: 'desc', getValue: s => s.playoffAppearances, format: formatCount },
+        { label: 'Win %', columnLabel: 'Win %', sort: 'desc', getValue: s => s.winPct, format: formatPct },
+        { label: 'Total Points For', columnLabel: 'Total PF', sort: 'desc', getValue: s => s.totalPointsFor, format: formatWhole },
+        { label: 'Total Points Against', columnLabel: 'Total PA', sort: 'asc', getValue: s => s.totalPointsAgainst, format: formatWhole },
+        { label: 'Avg. Points per Game', columnLabel: 'Avg. PF', sort: 'desc', getValue: s => s.avgPointsFor, format: formatPPG },
+        { label: 'Avg. Opponent Points per Game', columnLabel: 'Avg. PA', sort: 'asc', getValue: s => s.avgPointsAgainst, format: formatPPG },
+        { label: 'Best Points per Game (Single Season)', columnLabel: 'Best PPG', sort: 'desc', getValue: s => s.bestSeasonPPG, format: formatPPG },
+        { label: 'Worst Points per Game (Single Season)', columnLabel: 'Worst PPG', sort: 'desc', getValue: s => s.worstSeasonPPG, format: formatPPG },
+        { label: 'Average Final Rank', columnLabel: 'Avg. Rank', sort: 'asc', getValue: s => s.avgFinalRank, format: formatRankAvg },
+        { label: 'Average Regular Season Rank', columnLabel: 'Avg. Rank', sort: 'asc', getValue: s => s.avgRegSeasonRank, format: formatRankAvg },
+        { label: 'Average Preseason Rank', columnLabel: 'Avg. Rank', sort: 'asc', getValue: s => s.avgPreseasonRank, format: formatRankAvg },
+      ];
+
+      gridEl.innerHTML = specs.map(spec => buildLeaderboardCard(spec, combinedStats)).join('');
+    })
+    .catch(error => {
+      console.error(error);
+      gridEl.innerHTML = '<p>Unable to load leaderboard data.</p>';
+    });
+}
+
+initLeaderboard();
 
 // Light/dark toggle. The initial theme is already applied by a small inline
 // script in <head> (before first paint, reading the same storage key) so
