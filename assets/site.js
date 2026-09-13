@@ -760,18 +760,33 @@ function buildLeaderboardCard(spec, combinedStats) {
   const entries = combinedStats.map(stats => ({ name: stats.name, value: spec.getValue(stats) }));
   const sorted = sortLeaderboardEntries(entries, spec.sort);
 
-  const rows = sorted.map((entry, index) => {
-    const rank = index + 1;
+  // Standard competition ("1224") ranking: entries tied on value share the
+  // same rank, and the rank after a tied group jumps by the group's size
+  // (five managers tied for 1st are all rank 1; the next entry is rank 6).
+  // A small epsilon absorbs floating-point noise in averages/percentages.
+  // Missing values sort to the bottom (via sortLeaderboardEntries) and each
+  // get their own rank rather than tying with each other.
+  const EPSILON = 1e-9;
+  let rank = 0;
+  let previousValue;
+  const ranked = sorted.map((entry, index) => {
+    const tiesWithPrevious = entry.value != null && previousValue != null && Math.abs(entry.value - previousValue) <= EPSILON;
+    if (!tiesWithPrevious) rank = index + 1;
+    previousValue = entry.value;
+    return { ...entry, rank };
+  });
+
+  const rows = ranked.map(({ name, value, rank }) => {
     const isTopThree = rank <= 3;
-    const color = managerColors[entry.name] ?? '#94a3b8';
-    const image = profileImages[entry.name];
+    const color = managerColors[name] ?? '#94a3b8';
+    const image = profileImages[name];
     const avatar = isTopThree && image
       ? `<img class="leaderboard-avatar" src="../assets/profiles/${image}" alt="" style="border-color:${color}">`
       : '';
-    const display = entry.value == null ? '\u2014' : spec.format(entry.value);
+    const display = value == null ? '\u2014' : spec.format(value);
     return `<div class="leaderboard-row leaderboard-row--${rank}" role="row">
       <span class="leaderboard-rank" role="cell">${rank}</span>
-      <span class="leaderboard-member" role="rowheader">${avatar}<span class="leaderboard-name"${isTopThree ? ` style="color:${color}"` : ''}>${entry.name}</span></span>
+      <span class="leaderboard-member" role="rowheader">${avatar}<span class="leaderboard-name"${isTopThree ? ` style="color:${color}"` : ''}>${name}</span></span>
       <span class="leaderboard-value" role="cell">${display}</span>
     </div>`;
   }).join('');

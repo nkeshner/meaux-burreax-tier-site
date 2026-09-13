@@ -70,7 +70,11 @@ h1, h2, h3,
 /* On the homepage, the header and hero are widened to match the charts-stack
    width below (76rem) so the title, nav, and chart edges all line up rather
    than the header looking narrower than the content beneath it. */
-body.home .site-header__inner, body.home .hero, body.home .kpi-section { width: min(calc(100% - 2.5rem), 76rem); }
+/* The header bar is the same width on every page, using the homepage as the
+   standard (76rem) rather than the narrower 46rem prose column, so the nav
+   never wraps awkwardly on pages with more items than the homepage has. */
+.site-header__inner { width: min(calc(100% - 2.5rem), 76rem); }
+body.home .hero, body.home .kpi-section { width: min(calc(100% - 2.5rem), 76rem); }
 .hero h1 { max-width: none; }
 .site-header__inner { min-height: 4rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .site-name { color: var(--ink); font-weight: 700; letter-spacing: .03em; text-decoration: none; }
