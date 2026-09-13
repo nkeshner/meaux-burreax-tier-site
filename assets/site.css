@@ -67,6 +67,11 @@ h1, h2, h3,
 
 .site-header { border-bottom: 1px solid var(--line); background: var(--surface); }
 .site-header__inner, .content-wrap { width: min(calc(100% - 2.5rem), var(--max)); margin: auto; }
+/* On the homepage, the header and hero are widened to match the charts-stack
+   width below (76rem) so the title, nav, and chart edges all line up rather
+   than the header looking narrower than the content beneath it. */
+body.home .site-header__inner, body.home .hero, body.home .kpi-section { width: min(calc(100% - 2.5rem), 76rem); }
+.hero h1 { max-width: none; }
 .site-header__inner { min-height: 4rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .site-name { color: var(--ink); font-weight: 700; letter-spacing: .03em; text-decoration: none; }
 .site-nav { display: flex; align-items: center; gap: 1.25rem; padding: 0; margin: 0; list-style: none; font-size: .82rem; }
@@ -316,7 +321,14 @@ h3 { margin-top: 2rem; font-size: 1.15rem; letter-spacing: .02em; }
    so the eye lands on the podium without thirteen tables' worth of
    circular avatars competing for attention.
 --------------------------------------------------------------------- */
-.leaderboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: 1.75rem; margin-top: 2rem; }
+.leaderboard-page { width: min(calc(100% - 2.5rem), 76rem); margin: 0 auto; }
+.leaderboard-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; margin-top: 1.5rem; }
+@media (max-width: 64rem) {
+  .leaderboard-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 40rem) {
+  .leaderboard-grid { grid-template-columns: 1fr; }
+}
 .leaderboard-card { padding: 1.1rem 1.3rem 1.35rem; background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--accent); border-radius: .35rem; box-sizing: border-box; }
 .leaderboard-card__title { margin: 0 0 .85rem; color: var(--accent); font-size: 1rem; }
 .leaderboard-table { font: 1rem/1.3 "PT Serif", Georgia, "Times New Roman", serif; }
