@@ -19,6 +19,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/site.css">
+    <link rel="icon" type="image/png" href="assets/images/favicon.png">
     <script src="../assets/site.js" defer></script>
   </head>
   <body>
@@ -54,10 +55,12 @@
         data-points-for-src="../assets/data/points_for.csv"
         data-points-against-src="../assets/data/points_against.csv"
         data-reg-season-src="../assets/data/reg-season-rankings.csv"
+        data-position-breakdown-src="../assets/data/manager-position-pct-breakdown.csv"
       ></div>
       <div class="profile-layout">
         <div class="profile-photo-col">
           <div id="profile-photo" class="profile-photo" aria-live="polite"></div>
+          <section id="profile-playstyle" class="profile-playstyle" aria-live="polite" aria-label="Selected manager's playstyle"></section>
           <section id="profile-hardware" class="profile-hardware" aria-live="polite" aria-label="Selected manager's championships and postseason appearances"></section>
         </div>
         <section id="profile-stats" class="profile-stats" aria-live="polite" aria-label="Selected manager's stats"></section>

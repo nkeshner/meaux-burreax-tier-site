@@ -307,6 +307,22 @@ h3 { margin-top: 2rem; font-size: 1.15rem; letter-spacing: .02em; }
 .profile-stat-row:last-child { border-bottom: none; padding-bottom: 0; }
 .profile-stat-row span { color: var(--muted); }
 .profile-stat-row strong { color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+
+/* Playstyle tile: sits between the photo and the Hardware card, same visual
+   language (surface + accent top border) but centered and compact since it
+   holds a single label/value pair rather than a table. */
+.profile-playstyle {
+  padding: .9rem 1rem 1.05rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
+  border-radius: .35rem;
+  box-sizing: border-box;
+  text-align: center;
+}
+.profile-playstyle-label { margin: 0 0 .3rem; color: var(--muted); font: 700 .68rem/1.2 "Oswald", sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+.profile-playstyle-value { margin: 0; font: 700 1.25rem/1.2 "Oswald", sans-serif; letter-spacing: .01em; text-transform: uppercase; }
+
 @media (max-width: 40rem) {
   .profile-layout { grid-template-columns: 1fr; }
   .profile-photo-col { max-width: 20rem; margin: 0 auto; width: 100%; }

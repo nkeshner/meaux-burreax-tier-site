@@ -210,7 +210,7 @@ year,player,position,player_pos,price,manager
 2023,Diontae Johnson,WR,Diontae Johnson (WR),5,Michael
 2023,George Pickens,WR,George Pickens (WR),1,Michael
 2023,Dalton Kincaid,TE,Dalton Kincaid (TE),1,Michael
-2023,Jaylen Warren,WR,Jaylen Warren (WR),1,Michael
+2023,Jaylen Warren,RB,Jaylen Warren (RB),1,Michael
 2023,Samaje Perine,RB,Samaje Perine (RB),1,Michael
 2023,De'Von Achane,RB,De'Von Achane (RB),1,Michael
 2023,Sam LaPorta,TE,Sam LaPorta (TE),1,Michael
@@ -294,12 +294,12 @@ year,player,position,player_pos,price,manager
 2023,Garrett Wilson,WR,Garrett Wilson (WR),50,Theo
 2023,Najee Harris,RB,Najee Harris (RB),17,Theo
 2023,Alexander Mattison,RB,Alexander Mattison (RB),14,Theo
-2023,Antonio Gibson,WR,Antonio Gibson (WR),2,Theo
+2023,Antonio Gibson,RB,Antonio Gibson (RB),2,Theo
 2023,Jaxon Smith-Njigba,WR,Jaxon Smith-Njigba (WR),2,Theo
 2023,Marquise Brown,WR,Marquise Brown (WR),2,Theo
 2023,Evan Engram,TE,Evan Engram (TE),1,Theo
 2023,Cole Kmet,TE,Cole Kmet (TE),1,Theo
-2023,Jakobi Meyers,TE,Jakobi Meyers (TE),1,Theo
+2023,Jakobi Meyers,WR,Jakobi Meyers (WR),1,Theo
 2023,Jason Myers,K,Jason Myers (K),1,Theo
 2023,Tyreek Hill,WR,Tyreek Hill (WR),80,Wenlong
 2023,Dameon Pierce,RB,Dameon Pierce (RB),27,Wenlong
@@ -796,7 +796,7 @@ year,player,position,player_pos,price,manager
 2026,Chase Brown,RB,Chase Brown (RB),55,Theo
 2026,Nico Collins,WR,Nico Collins (WR),34,Theo
 2026,Tucker Kraft,TE,Tucker Kraft (TE),5,Theo
-2026,Tank Dell,WR,Tank Dell (WR),1,Theo
+2026,Tank Dell,RB,Tank Dell (RB),1,Theo
 2026,Tee Higgins,WR,Tee Higgins (WR),14,Theo
 2026,Drake Maye,QB,Drake Maye (QB),6,Theo
 2026,Ka'imi Fairbairn,K,Ka'imi Fairbairn (K),1,Theo

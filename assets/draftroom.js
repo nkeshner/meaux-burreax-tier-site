@@ -5,7 +5,7 @@
 
 const DRAFT_GUY_THRESHOLD = 40; // a player needs a >40% average score to be "claimed"
 const DRAFT_TABLE_PAGE_SIZE = 50;
-const TOP_GUYS_COUNT = 6;
+const TOP_GUYS_COUNT = 5;
 
 // One color per roster position, used to color-code the "Pos" column on the
 // full draft board and the position badge wherever a bare position appears.
@@ -169,13 +169,15 @@ function topGuysForManager(manager, associations, spendPerManager) {
     .slice(0, TOP_GUYS_COUNT);
 }
 
-function renderGuysList(containerEl, manager, associations, spendPerManager, averageRows) {
+function renderGuysList(containerEl, manager, associations, spendPerManager, averageRows, positionBreakdown) {
   const guys = topGuysForManager(manager, associations, spendPerManager);
+  const color = managerColors[manager] ?? '#94a3b8';
+  const playstyleHtml = `<p class="draft-playstyle" style="color:${color}">${computePlaystyle(positionBreakdown[manager])}</p>`;
   if (guys.length === 0) {
-    containerEl.innerHTML = `<p class="draft-history-empty">${manager} doesn't have any "guys" (yet).</p>`;
+    containerEl.innerHTML = `${playstyleHtml}<p class="draft-history-empty">${manager} doesn't have any "guys" (yet).</p>`;
     return;
   }
-  containerEl.innerHTML = `<div class="player-tile-grid">${guys.map(({ player, value }) => `
+  containerEl.innerHTML = `${playstyleHtml}<div class="player-tile-grid">${guys.map(({ player, value }) => `
     <div class="player-tile">
       <button type="button" class="player-tile-swatch" style="background:${playerGradient(averageRows.rows[player])}" data-player="${player}">
         <span class="player-tile-name">${stripPosition(player)}</span>
@@ -186,9 +188,13 @@ function renderGuysList(containerEl, manager, associations, spendPerManager, ave
 
 // ---- Section 2: Draft Value Over Time ------------------------------------
 
-function populatePlayerDropdown(selectEl, allYears, draftRecap) {
+// Populates the <datalist> backing the searchable player input: one
+// <option> per player, so the browser's native autocomplete filters the
+// list as the person types.
+function populatePlayerDropdown(datalistEl, draftRecap) {
   const players = Array.from(new Set(draftRecap.map(row => row.playerPos))).sort((a, b) => a.localeCompare(b));
-  selectEl.innerHTML = players.map(player => `<option value="${player}">${player}</option>`).join('');
+  datalistEl.innerHTML = players.map(player => `<option value="${player}"></option>`).join('');
+  return players;
 }
 
 function renderPlayerChart({ chartEl, tableEl, titleEl, playerPos, draftRecap, associations, allYears }) {
@@ -317,6 +323,14 @@ function applyDraftFilters(rows, filters) {
   return rows.filter(row => {
     if (filters.position !== 'all' && row.position !== filters.position) return false;
     if (filters.year !== 'all' && row.mostRecentYear !== filters.year) return false;
+    if (filters.manager !== 'all' && row.mostRecentManager !== filters.manager) return false;
+    if (filters.association !== 'all') {
+      if (filters.association === 'free-agent') {
+        if (row.association) return false;
+      } else if (row.association !== filters.association) {
+        return false;
+      }
+    }
     return true;
   });
 }
@@ -373,11 +387,14 @@ function initDraftRoom() {
   const guysButtonsEl = document.getElementById('draft-guys-buttons');
   const guysListEl = document.getElementById('draft-guys-list');
   const playerSelectEl = document.getElementById('draft-player-select');
+  const playerOptionsEl = document.getElementById('draft-player-options');
   const chartTitleEl = document.getElementById('draft-chart-title');
   const chartEl = document.getElementById('draft-value-chart');
   const historyTableEl = document.getElementById('draft-history-table');
   const positionFilterEl = document.getElementById('draft-position-filter');
   const yearFilterEl = document.getElementById('draft-year-filter');
+  const managerFilterEl = document.getElementById('draft-manager-filter');
+  const associationFilterEl = document.getElementById('draft-association-filter');
   const tableHeadEl = document.getElementById('draft-table-head');
   const tableBodyEl = document.getElementById('draft-table-body');
   const paginationEl = document.getElementById('draft-pagination');
@@ -388,8 +405,9 @@ function initDraftRoom() {
     loadPivotCSV('../assets/data/manager-player-spend-pct.csv'),
     loadPivotCSV('../assets/data/manager-player-spend-pct-per-manager.csv'),
     loadDraftRecap('../assets/data/draft-recap.csv'),
+    loadPositionBreakdownCSV('../assets/data/manager-position-pct-breakdown.csv'),
   ])
-    .then(([draftPct, spendPct, spendPerManager, draftRecap]) => {
+    .then(([draftPct, spendPct, spendPerManager, draftRecap, positionBreakdown]) => {
       const averageRows = computeAverageRows(draftPct, spendPct);
       const associations = computeAssociations(averageRows);
       const managers = draftPct.managers;
@@ -405,7 +423,7 @@ function initDraftRoom() {
           button.setAttribute('aria-pressed', String(isActive));
         });
         if (guysTitleEl) guysTitleEl.textContent = `${manager}'s Guys`;
-        renderGuysList(guysListEl, manager, associations, spendPerManager, averageRows);
+        renderGuysList(guysListEl, manager, associations, spendPerManager, averageRows, positionBreakdown);
       }
 
       guysButtonsEl.innerHTML = managers.map(manager => {
@@ -426,7 +444,7 @@ function initDraftRoom() {
       });
 
       // --- Section 2: Draft Value Over Time ---
-      populatePlayerDropdown(playerSelectEl, allYears, draftRecap);
+      const playerList = populatePlayerDropdown(playerOptionsEl, draftRecap);
 
       function updateChart() {
         renderPlayerChart({
@@ -439,11 +457,17 @@ function initDraftRoom() {
           allYears,
         });
       }
+      // The input only jumps to a player once its value is an exact match
+      // for one in the list (i.e. the person picked a suggestion, or typed
+      // the full name), so a chart doesn't flicker to "no data" mid-search.
+      playerSelectEl.addEventListener('input', () => {
+        if (playerList.includes(playerSelectEl.value)) updateChart();
+      });
       playerSelectEl.addEventListener('change', updateChart);
 
       selectManager(managers[0]);
       const defaultGuys = topGuysForManager(managers[0], associations, spendPerManager);
-      if (defaultGuys.length && playerSelectEl.querySelector(`option[value="${CSS.escape(defaultGuys[0].player)}"]`)) {
+      if (defaultGuys.length && playerList.includes(defaultGuys[0].player)) {
         playerSelectEl.value = defaultGuys[0].player;
       }
       updateChart();
@@ -453,8 +477,10 @@ function initDraftRoom() {
       const positions = Array.from(new Set(draftRecap.map(row => row.position))).sort();
       positionFilterEl.innerHTML = '<option value="all">All positions</option>' + positions.map(position => `<option value="${position}">${position}</option>`).join('');
       yearFilterEl.innerHTML = '<option value="all">All years</option>' + allYears.map(year => `<option value="${year}">${year}</option>`).join('');
+      managerFilterEl.innerHTML = '<option value="all">All managers</option>' + managers.map(manager => `<option value="${manager}">${manager}</option>`).join('');
+      associationFilterEl.innerHTML = '<option value="all">All players</option>' + managers.map(manager => `<option value="${manager}">${manager}'s Guy</option>`).join('') + '<option value="free-agent">Free Agent</option>';
 
-      const state = { filters: { position: 'all', year: 'all' }, sortKey: 'avgPrice', sortDir: 'desc', page: 0 };
+      const state = { filters: { position: 'all', year: 'all', manager: 'all', association: 'all' }, sortKey: 'avgPrice', sortDir: 'desc', page: 0 };
 
       function renderTable() {
         const { theadHtml, tbodyHtml, totalPages, totalRows } = renderDraftTable(state, allRows, averageRows);
@@ -494,6 +520,16 @@ function initDraftRoom() {
       });
       yearFilterEl.addEventListener('change', () => {
         state.filters.year = yearFilterEl.value;
+        state.page = 0;
+        renderTable();
+      });
+      managerFilterEl.addEventListener('change', () => {
+        state.filters.manager = managerFilterEl.value;
+        state.page = 0;
+        renderTable();
+      });
+      associationFilterEl.addEventListener('change', () => {
+        state.filters.association = associationFilterEl.value;
         state.page = 0;
         renderTable();
       });

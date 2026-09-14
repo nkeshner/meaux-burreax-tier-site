@@ -51,9 +51,14 @@
 .association-tag { font-weight: 700; }
 .association-tag--free-agent { color: var(--muted); font-weight: 600; font-style: italic; }
 
+/* Playstyle line: sits between the manager picker and that manager's
+   player tiles, e.g. "David's Guys" (h2) / "Balanced" (this) / tiles. */
+.draft-playstyle { margin: 0 0 1.1rem; font: 700 1.1rem/1.2 "Oswald", sans-serif; letter-spacing: .02em; text-transform: uppercase; }
+
 .draft-player-select { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin: 0 0 1.25rem; }
 .draft-player-select label { color: var(--muted); font: 700 .78rem/1.3 "Oswald", sans-serif; letter-spacing: .05em; text-transform: uppercase; }
-.draft-player-select select { padding: .5rem .7rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: .25rem; font: 600 .88rem/1.3 "PT Serif", Georgia, serif; min-width: 15rem; }
+.draft-player-select select, .draft-player-select input { padding: .5rem .7rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: .25rem; font: 600 .88rem/1.3 "PT Serif", Georgia, serif; min-width: 15rem; }
+.draft-player-select input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 .draft-chart-layout { display: grid; grid-template-columns: minmax(0, 1fr) 20rem; gap: clamp(1.5rem, 4vw, 3rem); align-items: start; }
 .draft-value-chart { padding: 1rem; background: var(--surface); border-top: 3px solid var(--accent); border-radius: .3rem; box-sizing: border-box; }

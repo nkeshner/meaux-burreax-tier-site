@@ -36,6 +36,51 @@ const profileImages = {
   Sam: 'sam-profile.jpg', Michael: 'michael-profile.jpg', Yiding: 'yiding-profile.jpeg', Wenlong: 'wenlong-profile.jpg',
 };
 
+// Parses manager-position-pct-breakdown.csv: a "pivot" CSV with a throwaway
+// first row, then a real header row of "manager,K,QB,RB,TE,WR,...", then one
+// row per manager giving that position's share of their career spend.
+// Percent signs are stripped; used both here (Manager Profiles) and on the
+// Draft Room page to derive each manager's "Playstyle".
+function parsePositionBreakdownCSV(text) {
+  const lines = text.trim().split(/\r?\n/).filter(line => line.length > 0);
+  const headerLine = lines[1] ?? '';
+  const positions = headerLine.split(',').slice(1).map(cell => cell.trim()).filter(Boolean);
+  const rows = {};
+  lines.slice(2).forEach(line => {
+    const cells = line.split(',');
+    const manager = (cells[0] ?? '').trim();
+    if (!manager) return;
+    const values = {};
+    positions.forEach((position, index) => {
+      const raw = (cells[index + 1] ?? '').trim();
+      values[position] = raw ? parseFloat(raw.replace('%', '')) : 0;
+    });
+    rows[manager] = values;
+  });
+  return rows;
+}
+
+async function loadPositionBreakdownCSV(src) {
+  const response = await fetch(src);
+  if (!response.ok) throw new Error(`Failed to load ${src}: ${response.status}`);
+  return parsePositionBreakdownCSV(await response.text());
+}
+
+// A manager's "Playstyle" label, derived from their career spend split
+// across positions (see manager-position-pct-breakdown.csv). Rules are
+// checked in order and the first match wins.
+function computePlaystyle(positionRow) {
+  if (!positionRow) return 'Balanced';
+  const qb = positionRow.QB ?? 0;
+  const wr = positionRow.WR ?? 0;
+  const rb = positionRow.RB ?? 0;
+  if (qb >= 10) return 'Quarterback Merchant';
+  if (wr >= 54) return 'Spread Offense';
+  if (rb >= 52) return 'Smashmouth';
+  if (rb < 40) return 'Air Raid';
+  return 'Balanced';
+}
+
 // Parses a simple "name,year1,year2,..." CSV into { years, rankingData }.
 // Blank cells become null (e.g. a manager who hasn't finished the current season yet).
 function parseRankingCSV(text) {
@@ -624,6 +669,16 @@ function renderProfilePhoto(photoEl, name, verdict) {
     : '';
 }
 
+// A small tile directly under the photo (and above Hardware) naming the
+// manager's Playstyle, derived from their career position spend split.
+function renderProfilePlaystyle(playstyleEl, name, positionBreakdown) {
+  const color = managerColors[name] ?? '#94a3b8';
+  const playstyle = computePlaystyle(positionBreakdown[name]);
+  playstyleEl.innerHTML = `
+    <p class="profile-playstyle-label">Playstyle</p>
+    <p class="profile-playstyle-value" style="color:${color}">${playstyle}</p>`;
+}
+
 // Championships / Finals / Playoff appearances get their own small card
 // directly under the photo, so the photo's height is balanced by something
 // on the left instead of leaving the right-hand stats table to do all the
@@ -671,6 +726,7 @@ function renderProfileStats(statsEl, name, stats) {
 function initProfileExplorer() {
   const buttonsEl = document.getElementById('profile-buttons');
   const photoEl = document.getElementById('profile-photo');
+  const playstyleEl = document.getElementById('profile-playstyle');
   const hardwareEl = document.getElementById('profile-hardware');
   const statsEl = document.getElementById('profile-stats');
   if (!buttonsEl || !photoEl || !statsEl) return;
@@ -684,8 +740,9 @@ function initProfileExplorer() {
     loadRankingCSV(buttonsEl.dataset.pointsForSrc),
     loadRankingCSV(buttonsEl.dataset.pointsAgainstSrc),
     loadRankingCSV(buttonsEl.dataset.regSeasonSrc),
+    loadPositionBreakdownCSV(buttonsEl.dataset.positionBreakdownSrc),
   ])
-    .then(([tierData, resultsData, winsData, lossesData, tiesData, pointsForData, pointsAgainstData, regSeasonData]) => {
+    .then(([tierData, resultsData, winsData, lossesData, tiesData, pointsForData, pointsAgainstData, regSeasonData, positionBreakdown]) => {
       const names = tierData.rankingData.map(manager => manager.name);
       const datasets = { winsData, lossesData, tiesData, pointsForData, pointsAgainstData, resultsData, regSeasonData };
 
@@ -697,6 +754,7 @@ function initProfileExplorer() {
         });
         const { verdict } = computeMemberMetrics(name, tierData, resultsData);
         renderProfilePhoto(photoEl, name, verdict);
+        if (playstyleEl) renderProfilePlaystyle(playstyleEl, name, positionBreakdown);
         const stats = computeProfileStats(name, datasets);
         if (hardwareEl) renderProfileHardware(hardwareEl, name, stats);
         renderProfileStats(statsEl, name, stats);

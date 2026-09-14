@@ -20,6 +20,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/site.css">
     <link rel="stylesheet" href="../assets/draftroom.css">
+    <link rel="icon" type="image/png" href="assets/images/favicon.png">
     <script src="../assets/site.js" defer></script>
     <script src="../assets/draftroom.js" defer></script>
   </head>
@@ -33,8 +34,8 @@
             <li><a href="../index.html">Home</a></li>
             <li><a href="index.html">Pre-Season Rankings</a></li>
             <li><a href="profiles.html">Manager Profiles</a></li>
+	    <li><a aria-current="page" href="draftroom.html">Draft Room</a></li>
             <li><a href="leaderboard.html">All-Time Leaderboard</a></li>
-            <li><a aria-current="page" href="draftroom.html">Draft Room</a></li>
           </ul>
         </nav><button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false"><span class="theme-toggle__icon" aria-hidden="true">☾</span><span class="theme-toggle__label">Dark</span></button>
       </div>
@@ -43,12 +44,11 @@
       <p class="eyebrow">Archive</p>
       <h1>Draft Room</h1>
       <p class="lede">Every manager's guys, how a player's price has moved over time, and the full auction history.</p>
-      <div id="draft-color-key" class="member-chart-head" aria-label="Manager color key"></div>
 
       <section class="draft-section" aria-labelledby="draft-guys-title">
         <div class="draft-section-head">
           <h2 id="draft-guys-title">Manager&rsquo;s Guys</h2>
-          <p class="draft-section-sub">Pick a manager to see their top 6 guys &mdash; the players who've soaked up the biggest share of that manager's budget over the years.</p>
+          <p class="draft-section-sub">The players who've soaked up the biggest share of that manager's budget over the years.</p>
         </div>
         <div id="draft-guys-buttons" class="member-buttons" role="group" aria-label="Choose a manager"></div>
         <div id="draft-guys-list" aria-live="polite"></div>
@@ -61,7 +61,8 @@
         </div>
         <div class="draft-player-select">
           <label for="draft-player-select">Player</label>
-          <select id="draft-player-select"></select>
+          <input type="text" id="draft-player-select" list="draft-player-options" placeholder="Search players&hellip;" autocomplete="off">
+          <datalist id="draft-player-options"></datalist>
         </div>
         <div class="draft-chart-layout">
           <div id="draft-value-chart" class="draft-value-chart" aria-live="polite"></div>
@@ -82,6 +83,14 @@
           <div class="draft-filter">
             <label for="draft-year-filter">Most recent year</label>
             <select id="draft-year-filter"><option value="all">All years</option></select>
+          </div>
+          <div class="draft-filter">
+            <label for="draft-manager-filter">Most recent manager</label>
+            <select id="draft-manager-filter"><option value="all">All managers</option></select>
+          </div>
+          <div class="draft-filter">
+            <label for="draft-association-filter">Association</label>
+            <select id="draft-association-filter"><option value="all">All players</option></select>
           </div>
         </div>
         <div class="draft-table-wrap">
