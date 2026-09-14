@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('meaux-burreax-theme');
+          document.documentElement.dataset.theme = stored === 'light' ? 'light' : 'dark';
+        } catch (error) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Draft Room: every manager's guys, player value history, and the full Meaux Burreax draft board.">
+    <title>Draft Room · Meaux Burreax: Tiers for Fears</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/site.css">
+    <link rel="stylesheet" href="../assets/draftroom.css">
+    <script src="../assets/site.js" defer></script>
+    <script src="../assets/draftroom.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="site-header">
+      <div class="site-header__inner">
+        <a class="site-name" href="../index.html">Meaux Burreax: Tiers for Fears</a>
+        <nav aria-label="Primary navigation">
+          <ul class="site-nav">
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="index.html">Pre-Season Rankings</a></li>
+            <li><a href="profiles.html">Manager Profiles</a></li>
+            <li><a href="leaderboard.html">All-Time Leaderboard</a></li>
+            <li><a aria-current="page" href="draftroom.html">Draft Room</a></li>
+          </ul>
+        </nav><button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false"><span class="theme-toggle__icon" aria-hidden="true">☾</span><span class="theme-toggle__label">Dark</span></button>
+      </div>
+    </header>
+    <main id="main-content" class="content-wrap page-intro draft-room">
+      <p class="eyebrow">Archive</p>
+      <h1>Draft Room</h1>
+      <p class="lede">Every manager's guys, how a player's price has moved over time, and the full auction history.</p>
+      <div id="draft-color-key" class="member-chart-head" aria-label="Manager color key"></div>
+
+      <section class="draft-section" aria-labelledby="draft-guys-title">
+        <div class="draft-section-head">
+          <h2 id="draft-guys-title">Manager&rsquo;s Guys</h2>
+          <p class="draft-section-sub">Pick a manager to see their top 5 guys &mdash; the players who've soaked up the biggest share of that manager's budget over the years.</p>
+        </div>
+        <div id="draft-guys-buttons" class="member-buttons" role="group" aria-label="Choose a manager"></div>
+        <div id="draft-guys-list" aria-live="polite"></div>
+      </section>
+
+      <section class="draft-section" id="draft-value-section" aria-labelledby="draft-chart-title">
+        <div class="draft-section-head">
+          <h2 id="draft-chart-title">Draft Value Over Time</h2>
+          <p class="draft-section-sub">Hover the chart to see who drafted the player each year.</p>
+        </div>
+        <div class="draft-player-select">
+          <label for="draft-player-select">Player</label>
+          <select id="draft-player-select"></select>
+        </div>
+        <div class="draft-chart-layout">
+          <div id="draft-value-chart" class="draft-value-chart" aria-live="polite"></div>
+          <div id="draft-history-table" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section class="draft-section" aria-labelledby="draft-table-title">
+        <div class="draft-section-head">
+          <h2 id="draft-table-title">Full Draft Board</h2>
+          <p class="draft-section-sub" id="draft-row-count">Loading&hellip;</p>
+        </div>
+        <div class="draft-filters">
+          <div class="draft-filter">
+            <label for="draft-position-filter">Position</label>
+            <select id="draft-position-filter"><option value="all">All positions</option></select>
+          </div>
+          <div class="draft-filter">
+            <label for="draft-year-filter">Most recent year</label>
+            <select id="draft-year-filter"><option value="all">All years</option></select>
+          </div>
+        </div>
+        <div class="draft-table-wrap">
+          <table class="draft-table">
+            <thead id="draft-table-head"></thead>
+            <tbody id="draft-table-body"></tbody>
+          </table>
+        </div>
+        <div id="draft-pagination" class="draft-pagination"></div>
+      </section>
+    </main>
+    <footer class="site-footer"><div class="content-wrap"><p>Meaux Burreax: Tiers for Fears.</p></div></footer>
+  </body>
+</html>
