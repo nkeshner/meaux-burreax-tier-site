@@ -5,6 +5,17 @@
 
 const DRAFT_GUY_THRESHOLD = 40; // a player needs a >40% average score to be "claimed"
 const DRAFT_TABLE_PAGE_SIZE = 50;
+const TOP_GUYS_COUNT = 6;
+
+// One color per roster position, used to color-code the "Pos" column on the
+// full draft board and the position badge wherever a bare position appears.
+const positionColors = {
+  QB: '#f87171',
+  RB: '#34d399',
+  WR: '#60a5fa',
+  TE: '#fbbf24',
+  K: '#c084fc',
+};
 
 // ---- CSV parsing --------------------------------------------------------
 
@@ -61,20 +72,35 @@ async function loadDraftRecap(src) {
 
 // ---- Shared helpers: association + gradient tiles ------------------------
 
+// For every player, averages their manager-player-draft-pct.csv row with
+// their manager-player-spend-pct.csv row, manager by manager. This single
+// "average row" per player drives both which manager (if any) is credited
+// as the player's association, and the gradient used on that player's tile.
+function computeAverageRows(draftPct, spendPct) {
+  const players = new Set([...Object.keys(draftPct.rows), ...Object.keys(spendPct.rows)]);
+  const managers = draftPct.managers;
+  const rows = {};
+  players.forEach(player => {
+    const dRow = draftPct.rows[player] ?? {};
+    const sRow = spendPct.rows[player] ?? {};
+    const row = {};
+    managers.forEach(manager => {
+      row[manager] = ((dRow[manager] ?? 0) + (sRow[manager] ?? 0)) / 2;
+    });
+    rows[player] = row;
+  });
+  return { managers, rows };
+}
+
 // A player is "[Manager]'s guy" if that manager has the single highest
 // average of (draft %, spend %) across all managers, and that average is
 // above the threshold. Ties, or nobody clearing the threshold, => Free Agent
 // (represented here as `null`).
-function computeAssociations(draftPct, spendPct) {
-  const players = new Set([...Object.keys(draftPct.rows), ...Object.keys(spendPct.rows)]);
-  const managers = draftPct.managers;
+function computeAssociations(averageRows) {
   const associations = {};
-  players.forEach(player => {
-    const dRow = draftPct.rows[player] ?? {};
-    const sRow = spendPct.rows[player] ?? {};
+  Object.entries(averageRows.rows).forEach(([player, row]) => {
     let best = null, bestAvg = -Infinity, tieCount = 0;
-    managers.forEach(manager => {
-      const avg = ((dRow[manager] ?? 0) + (sRow[manager] ?? 0)) / 2;
+    Object.entries(row).forEach(([manager, avg]) => {
       if (avg > bestAvg + 1e-9) {
         bestAvg = avg;
         best = manager;
@@ -92,20 +118,38 @@ function labelForAssociation(manager) {
   return manager ? `${manager}'s Guy` : 'Free Agent';
 }
 
-// Builds a CSS gradient for a player's tile: one color band per manager who
-// has ever drafted them, sized by their share of times drafted (the
-// manager-player-draft-pct.csv row for that player).
-function playerGradient(draftRow) {
-  const entries = Object.entries(draftRow ?? {}).filter(([, pct]) => pct > 0).sort((a, b) => b[1] - a[1]);
-  if (entries.length === 0) return 'linear-gradient(135deg, var(--surface-2), var(--surface-2))';
+// Colored, manager-tinted markup for the "Association" table cell.
+function associationCellHtml(manager) {
+  if (!manager) return `<span class="association-tag association-tag--free-agent">Free Agent</span>`;
+  const color = managerColors[manager] ?? '#94a3b8';
+  return `<span class="association-tag" style="color:${color}">${manager}'s Guy</span>`;
+}
+
+// Colored badge for the "Pos" table cell.
+function positionBadge(position) {
+  const color = positionColors[position] ?? '#94a3b8';
+  return `<span class="position-pill" style="background:${color}">${position}</span>`;
+}
+
+// Builds a smoothly-blended CSS gradient for a player's tile: one color per
+// manager who has a share of `row` (their average draft/spend %), placed at
+// the midpoint of that manager's share so colors blend into each other
+// rather than sitting in hard-edged blocks. Ordered highest share first.
+function playerGradient(row) {
+  const entries = Object.entries(row ?? {}).filter(([, pct]) => pct > 0).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0) return 'linear-gradient(135deg, var(--surface-2), var(--surface))';
+  if (entries.length === 1) {
+    const color = managerColors[entries[0][0]] ?? '#94a3b8';
+    return `linear-gradient(135deg, ${color}, ${color})`;
+  }
   let cumulative = 0;
   const stops = entries.map(([manager, pct]) => {
     const color = managerColors[manager] ?? '#94a3b8';
-    const start = cumulative;
+    const midpoint = cumulative + pct / 2;
     cumulative += pct;
-    return `${color} ${start.toFixed(2)}% ${cumulative.toFixed(2)}%`;
+    return { color, midpoint };
   });
-  return `linear-gradient(135deg, ${stops.join(', ')})`;
+  return `linear-gradient(135deg, ${stops.map(stop => `${stop.color} ${stop.midpoint.toFixed(2)}%`).join(', ')})`;
 }
 
 function stripPosition(playerPos) {
@@ -114,7 +158,7 @@ function stripPosition(playerPos) {
 
 // ---- Section 1: Manager's Guys -------------------------------------------
 
-// Top 5 players associated with `manager`, ranked by the share of that
+// Top 6 players associated with `manager`, ranked by the share of that
 // manager's own budget spent on the player (manager-player-spend-pct-per-manager.csv).
 function topGuysForManager(manager, associations, spendPerManager) {
   const rows = spendPerManager.rows;
@@ -122,20 +166,22 @@ function topGuysForManager(manager, associations, spendPerManager) {
     .filter(player => associations[player] === manager)
     .map(player => ({ player, value: rows[player]?.[manager] ?? 0 }))
     .sort((a, b) => b.value - a.value)
-    .slice(0, 5);
+    .slice(0, TOP_GUYS_COUNT);
 }
 
-function renderGuysList(containerEl, manager, associations, spendPerManager, draftPct) {
+function renderGuysList(containerEl, manager, associations, spendPerManager, averageRows) {
   const guys = topGuysForManager(manager, associations, spendPerManager);
   if (guys.length === 0) {
     containerEl.innerHTML = `<p class="draft-history-empty">${manager} doesn't have any "guys" (yet).</p>`;
     return;
   }
   containerEl.innerHTML = `<div class="player-tile-grid">${guys.map(({ player, value }) => `
-    <button type="button" class="player-tile" style="background:${playerGradient(draftPct.rows[player])}" data-player="${player}">
-      <span class="player-tile-name">${stripPosition(player)}</span>
-      <span class="player-tile-meta">${value.toFixed(1)}% of ${manager}'s budget</span>
-    </button>`).join('')}</div>`;
+    <div class="player-tile">
+      <button type="button" class="player-tile-swatch" style="background:${playerGradient(averageRows.rows[player])}" data-player="${player}">
+        <span class="player-tile-name">${stripPosition(player)}</span>
+      </button>
+      <p class="player-tile-meta">${value.toFixed(1)}% of ${manager}'s budget</p>
+    </div>`).join('')}</div>`;
 }
 
 // ---- Section 2: Draft Value Over Time ------------------------------------
@@ -161,7 +207,7 @@ function renderPlayerChart({ chartEl, tableEl, titleEl, playerPos, draftRecap, a
   const manager = associations[playerPos];
   const lineColor = manager ? (managerColors[manager] ?? '#ffffff') : '#ffffff';
 
-  const width = 640, height = 380, left = 60, right = 24, top = 24, bottom = 58;
+  const width = 820, height = 420, left = 64, right = 24, top = 24, bottom = 58;
   const plotRight = width - right, plotBottom = height - bottom;
   const maxPrice = Math.max(...history.map(row => row.price), 1);
   const x = year => {
@@ -259,7 +305,7 @@ const draftTableColumns = [
   { key: 'avgPrice', label: 'Avg. Value', format: value => `$${value.toFixed(1)}` },
   { key: 'maxPrice', label: 'Highest', format: value => `$${value}` },
   { key: 'minPrice', label: 'Lowest', format: value => `$${value}` },
-  { key: 'association', label: 'Association', format: labelForAssociation },
+  { key: 'association', label: 'Association', format: associationCellHtml },
   { key: 'timesDrafted', label: 'Times Drafted' },
   { key: 'mostRecentYear', label: 'Last Year' },
   { key: 'mostRecentManager', label: 'Last Manager' },
@@ -287,7 +333,7 @@ function sortDraftRows(rows, key, dir) {
   });
 }
 
-function renderDraftTable(state, allRows, draftPct) {
+function renderDraftTable(state, allRows, averageRows) {
   const filtered = applyDraftFilters(allRows, state.filters);
   const sorted = sortDraftRows(filtered, state.sortKey, state.sortDir);
   const totalPages = Math.max(1, Math.ceil(sorted.length / DRAFT_TABLE_PAGE_SIZE));
@@ -301,8 +347,8 @@ function renderDraftTable(state, allRows, draftPct) {
   }).join('')}</tr>`;
 
   const tbodyHtml = pageRows.map(row => `<tr>
-    <td class="draft-player-cell" style="background:${playerGradient(draftPct.rows[row.playerPos])}">${row.player}</td>
-    <td>${row.position}</td>
+    <td class="draft-player-cell" style="background:${playerGradient(averageRows.rows[row.playerPos])}">${row.player}</td>
+    <td>${positionBadge(row.position)}</td>
     ${draftTableColumns.slice(2).map(col => `<td>${col.format ? col.format(row[col.key]) : row[col.key]}</td>`).join('')}
   </tr>`).join('');
 
@@ -323,6 +369,7 @@ function initDraftRoom() {
   if (!root) return;
 
   const colorKeyEl = document.getElementById('draft-color-key');
+  const guysTitleEl = document.getElementById('draft-guys-title');
   const guysButtonsEl = document.getElementById('draft-guys-buttons');
   const guysListEl = document.getElementById('draft-guys-list');
   const playerSelectEl = document.getElementById('draft-player-select');
@@ -343,7 +390,8 @@ function initDraftRoom() {
     loadDraftRecap('../assets/data/draft-recap.csv'),
   ])
     .then(([draftPct, spendPct, spendPerManager, draftRecap]) => {
-      const associations = computeAssociations(draftPct, spendPct);
+      const averageRows = computeAverageRows(draftPct, spendPct);
+      const associations = computeAssociations(averageRows);
       const managers = draftPct.managers;
       const allYears = Array.from(new Set(draftRecap.map(row => row.year))).sort();
 
@@ -356,7 +404,8 @@ function initDraftRoom() {
           button.classList.toggle('is-active', isActive);
           button.setAttribute('aria-pressed', String(isActive));
         });
-        renderGuysList(guysListEl, manager, associations, spendPerManager, draftPct);
+        if (guysTitleEl) guysTitleEl.textContent = `${manager}'s Guys`;
+        renderGuysList(guysListEl, manager, associations, spendPerManager, averageRows);
       }
 
       guysButtonsEl.innerHTML = managers.map(manager => {
@@ -369,7 +418,7 @@ function initDraftRoom() {
         selectManager(button.dataset.name);
       });
       guysListEl.addEventListener('click', event => {
-        const tile = event.target.closest('.player-tile');
+        const tile = event.target.closest('.player-tile-swatch');
         if (!tile) return;
         playerSelectEl.value = tile.dataset.player;
         updateChart();
@@ -408,7 +457,7 @@ function initDraftRoom() {
       const state = { filters: { position: 'all', year: 'all' }, sortKey: 'avgPrice', sortDir: 'desc', page: 0 };
 
       function renderTable() {
-        const { theadHtml, tbodyHtml, totalPages, totalRows } = renderDraftTable(state, allRows, draftPct);
+        const { theadHtml, tbodyHtml, totalPages, totalRows } = renderDraftTable(state, allRows, averageRows);
         tableHeadEl.innerHTML = theadHtml;
         tableBodyEl.innerHTML = tbodyHtml;
         paginationEl.innerHTML = `

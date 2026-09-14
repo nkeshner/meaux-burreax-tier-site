@@ -4,6 +4,11 @@
    (.chart-grid, .chart-line, .chart-point, .chart-axis-text/-title,
    .member-buttons/.member-button, .member-chart-head/.member-swatch).
 --------------------------------------------------------------------- */
+/* Widened to match the other archive pages (leaderboard, homepage) instead
+   of the narrower 46rem prose column, so the chart and table below have
+   room to breathe. */
+.draft-room { width: min(calc(100% - 2.5rem), 76rem); margin: 0 auto; }
+
 .draft-section { margin-top: 3.5rem; }
 .draft-section:first-of-type { margin-top: 2rem; }
 .draft-section-head { margin-bottom: 1rem; }
@@ -12,30 +17,39 @@
 
 #draft-color-key { margin: 1.5rem 0 0; }
 
-/* Player tiles: a button whose background is a gradient of every manager's
-   color, weighted by how often that manager drafted the player. Used both
-   in the "guys" list and (smaller, inline) as the player-name cell in the
-   full draft board table below. */
-.player-tile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: .85rem; margin-top: 1.25rem; }
-.player-tile {
+/* Player tiles: a swatch whose background is a smooth gradient blended from
+   every manager's color, weighted by their average draft/spend share of the
+   player (highest share first). Used both in the "guys" list below and
+   (smaller, inline) as the player-name cell in the full draft board table.
+   The budget caption lives underneath the swatch, outside the gradient, so
+   the player name inside the swatch can run bigger. */
+.player-tile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 1rem; margin-top: 1.25rem; }
+.player-tile { display: flex; flex-direction: column; gap: .5rem; }
+.player-tile-swatch {
   position: relative;
   display: block;
-  padding: 1rem .9rem;
-  border-radius: .35rem;
+  padding: 1.5rem 1.1rem;
+  border-radius: .4rem;
   border: 1px solid var(--line);
   color: #fff;
   text-align: left;
   cursor: pointer;
   font-family: inherit;
   overflow: hidden;
-  box-shadow: 0 .4rem 1rem var(--shadow);
+  box-shadow: 0 .5rem 1.4rem var(--shadow);
+  transition: transform .14s ease, box-shadow .14s ease;
 }
-.player-tile::after { content: ''; position: absolute; inset: 0; background: rgba(0, 0, 0, .28); pointer-events: none; }
-.player-tile:hover::after, .player-tile:focus-visible::after { background: rgba(0, 0, 0, .14); }
-.player-tile > * { position: relative; z-index: 1; }
-.player-tile-name { display: block; font: 700 .95rem/1.3 "Oswald", sans-serif; letter-spacing: .02em; text-transform: uppercase; text-shadow: 0 1px 3px rgba(0, 0, 0, .7); }
-.player-tile-meta { display: block; margin-top: .4rem; font: 600 .72rem/1.3 "Oswald", sans-serif; letter-spacing: .04em; text-transform: uppercase; color: #f5f5f0; text-shadow: 0 1px 2px rgba(0, 0, 0, .7); }
+.player-tile-swatch::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, .32) 100%); pointer-events: none; }
+.player-tile-swatch:hover, .player-tile-swatch:focus-visible { transform: translateY(-2px); box-shadow: 0 .75rem 1.8rem var(--shadow); }
+.player-tile-swatch > * { position: relative; z-index: 1; }
+.player-tile-name { display: block; font: 700 1.2rem/1.25 "Oswald", sans-serif; letter-spacing: .01em; text-transform: uppercase; text-shadow: 0 2px 6px rgba(0, 0, 0, .75); }
+.player-tile-meta { margin: 0; padding: 0 .1rem; font: 600 .74rem/1.3 "Oswald", sans-serif; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
 .draft-history-empty { margin: 1rem 0; color: var(--muted); font-family: "PT Serif", Georgia, serif; }
+
+/* Colored badges used in the Full Draft Board table (Section 3). */
+.position-pill { display: inline-block; padding: .2rem .6rem; border-radius: 999px; color: #10140b; font: 700 .68rem/1.3 "Oswald", sans-serif; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+.association-tag { font-weight: 700; }
+.association-tag--free-agent { color: var(--muted); font-weight: 600; font-style: italic; }
 
 .draft-player-select { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin: 0 0 1.25rem; }
 .draft-player-select label { color: var(--muted); font: 700 .78rem/1.3 "Oswald", sans-serif; letter-spacing: .05em; text-transform: uppercase; }
