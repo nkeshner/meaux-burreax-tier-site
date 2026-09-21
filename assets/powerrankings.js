@@ -48,6 +48,18 @@ function weekRangeLabel(weeks) {
   return first === last ? `Week ${first}` : `Weeks ${first}\u2013${last}`;
 }
 
+// "Latest placement": each manager's rank in the most recent week of the
+// year (the last entry in every series, since weeks are sorted ascending),
+// listed best to worst. Uses the same table markup as "Average placement"
+// (minus the value column, since the # already is the value).
+function renderLatestTable(latestEl, rankingData) {
+  const standings = rankingData
+    .map(({ name, ranks }) => ({ name, rank: ranks.at(-1) }))
+    .filter(entry => entry.rank != null)
+    .sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name));
+  latestEl.innerHTML = `<div class="standings-table standings-table--simple" role="table" aria-label="Latest placement standings"><div class="standings-head" role="row"><span role="columnheader">#</span><span role="columnheader">Member</span></div>${standings.map(({ name, rank }) => `<div class="standing-row standing-${rank}" role="row"><span class="standing-number" role="cell">${rank}</span><strong role="rowheader">${name}</strong></div>`).join('')}</div>`;
+}
+
 function initPowerRankings() {
   const stackEl = document.getElementById('power-stack');
   if (!stackEl) return;
@@ -62,12 +74,18 @@ function initPowerRankings() {
             <h2 class="chart-title" id="power-title-${year}">${year}</h2>
             <p class="chart-subtitle">ESPN power rankings by week &middot; ${weekRangeLabel(weeks)}</p>
           </div>
-          <div class="ranking-layout">
+          <div class="ranking-layout ranking-layout--dual">
             <div id="power-chart-${year}" class="ranking-chart" aria-live="polite" aria-labelledby="power-title-${year}"></div>
-            <section class="ranking-average" aria-labelledby="power-average-title-${year}">
-              <h3 id="power-average-title-${year}">Average placement</h3>
-              <div id="power-average-table-${year}"></div>
-            </section>
+            <div class="ranking-side">
+              <section class="ranking-average" aria-labelledby="power-average-title-${year}">
+                <h3 id="power-average-title-${year}">Average placement</h3>
+                <div id="power-average-table-${year}"></div>
+              </section>
+              <section class="ranking-average" aria-labelledby="power-latest-title-${year}">
+                <h3 id="power-latest-title-${year}">Latest placement</h3>
+                <div id="power-latest-table-${year}"></div>
+              </section>
+            </div>
           </div>
         </div>`).join('');
 
@@ -82,6 +100,7 @@ function initPowerRankings() {
           xTitle: 'Week',
           assetPrefix: '../assets/',
         });
+        renderLatestTable(document.getElementById(`power-latest-table-${year}`), rankingData);
       });
     })
     .catch(error => {

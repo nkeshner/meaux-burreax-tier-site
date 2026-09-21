@@ -192,11 +192,15 @@ function renderRankingChart({ chartEl, averageEl, years, rankingData, title, des
     renderAverageTable(averageEl, rankingData);
     const averagePanel = averageEl.closest('.ranking-average');
     if (averagePanel) {
+      // The alignment values are set on the shared layout (not on the average
+      // panel itself) so any sibling table panel, like "Latest placement" on
+      // the ESPN Power Rankings page, lines up with the chart rows as well.
+      const alignTarget = averagePanel.closest('.ranking-layout') ?? averagePanel;
       const alignStandings = () => {
         const svgHeight = chartEl.querySelector('svg').getBoundingClientRect().height;
-        averagePanel.style.setProperty('--chart-height', `${svgHeight}px`);
-        averagePanel.style.setProperty('--chart-top', `${svgHeight * top / height}px`);
-        averagePanel.style.setProperty('--chart-step', `${svgHeight * (height - top - bottom) / height / (rankCount - 1 || 1)}px`);
+        alignTarget.style.setProperty('--chart-height', `${svgHeight}px`);
+        alignTarget.style.setProperty('--chart-top', `${svgHeight * top / height}px`);
+        alignTarget.style.setProperty('--chart-step', `${svgHeight * (height - top - bottom) / height / (rankCount - 1 || 1)}px`);
       };
       new ResizeObserver(alignStandings).observe(chartEl);
       alignStandings();
