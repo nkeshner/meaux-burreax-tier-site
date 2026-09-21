@@ -15,6 +15,48 @@ FILES = [
     ("2026", Path(r"C:\Users\noahk\Downloads\2026 Fantasy Football Pre-Season Rankings.docx"), "2026 Pre-Season Rankings"),
 ]
 
+# The page shell (theme script, fonts, favicon, full site nav, theme toggle)
+# matches pages/_template.html. It is a plain string with __PLACEHOLDERS__
+# rather than an f-string so the JavaScript braces don't need escaping.
+# When you add a new top-level page, add it to the nav here and in
+# pages/_template.html as well as in the other pages' headers.
+PAGE_TEMPLATE = '''<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('meaux-burreax-theme');
+          document.documentElement.dataset.theme = stored === 'light' ? 'light' : 'dark';
+        } catch (error) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="__YEAR__ Meaux Burreax fantasy football pre-season rankings.">
+    <title>__TITLE__ · Meaux Burreax: Tiers for Fears</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/site.css">
+    <link rel="icon" type="image/png" href="../assets/images/favicon.png">
+    <script src="../assets/site.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="site-header"><div class="site-header__inner"><a class="site-name" href="../index.html">Meaux Burreax: Tiers for Fears</a><nav aria-label="Primary navigation"><ul class="site-nav"><li><a href="../index.html">Home</a></li><li><a href="index.html">Pre-Season Rankings</a></li><li><a href="power-rankings.html">ESPN Power Rankings</a></li><li><a href="profiles.html">Manager Profiles</a></li><li><a href="draftroom.html">Draft Room</a></li><li><a href="leaderboard.html">All-Time Leaderboard</a></li></ul></nav><button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false"><span class="theme-toggle__icon" aria-hidden="true">☾</span><span class="theme-toggle__label">Dark</span></button></div></header>
+    <main id="main-content" class="content-wrap article rankings">
+      <p class="eyebrow">Meaux Burreax · __YEAR__</p>
+      <h1>__TITLE__</h1>
+      <p class="article__meta"><a href="index.html">All years</a></p>
+      __CONTENT__
+    </main>
+    <footer class="site-footer"><div class="content-wrap"><p>Meaux Burreax: Tiers for Fears.</p></div></footer>
+  </body>
+</html>'''
+
 def image_extension(part):
     return {
         "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/tiff": "tiff",
@@ -90,28 +132,11 @@ def convert(year, source, title):
     if tier_open:
         content.append('</section>')
 
-    page = f'''<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="{year} Meaux Burreax fantasy football pre-season rankings.">
-    <title>{title} · Meaux Burreax: Tiers for Fears</title>
-    <link rel="stylesheet" href="../assets/site.css">
-    <script src="../assets/site.js" defer></script>
-  </head>
-  <body>
-    <a class="skip-link" href="#main-content">Skip to content</a>
-    <header class="site-header"><div class="site-header__inner"><a class="site-name" href="../index.html">Meaux Burreax: Tiers for Fears</a><nav aria-label="Primary navigation"><ul class="site-nav"><li><a href="../index.html">Home</a></li><li><a href="index.html">Pre-Season Rankings</a></li></ul></nav></div></header>
-    <main id="main-content" class="content-wrap article rankings">
-      <p class="eyebrow">Meaux Burreax · {year}</p>
-      <h1>{title}</h1>
-      <p class="article__meta"><a href="index.html">All years</a></p>
-      {''.join(content)}
-    </main>
-    <footer class="site-footer"><div class="content-wrap"><p>Meaux Burreax: Tiers for Fears.</p></div></footer>
-  </body>
-</html>'''
+    # Substitute the document text last so nothing in it can be mistaken for a placeholder.
+    page = (PAGE_TEMPLATE
+            .replace('__YEAR__', year)
+            .replace('__TITLE__', title)
+            .replace('__CONTENT__', ''.join(content)))
     (PAGES / f'{year}.html').write_text(page, encoding='utf-8')
 
 for year, source, title in FILES:

@@ -372,3 +372,11 @@ h3 { margin-top: 2rem; font-size: 1.15rem; letter-spacing: .02em; }
 @media (max-width: 30rem) {
   .site-header__inner { align-items: flex-start; flex-direction: column; padding: 1rem 0; gap: .6rem; }
 }
+
+/* ---------------------------------------------------------------------
+   ESPN Power Rankings page: the intro is widened to the same 76rem as the
+   .charts-stack beneath it (like the homepage hero), and the long page
+   title is allowed to run on one line instead of wrapping at 20ch.
+--------------------------------------------------------------------- */
+.power-intro { width: min(calc(100% - 2.5rem), 76rem); }
+.power-intro h1 { max-width: none; }

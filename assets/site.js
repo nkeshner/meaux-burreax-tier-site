@@ -141,7 +141,10 @@ function smoothPath(points) {
   return segments.join(' ');
 }
 
-function renderRankingChart({ chartEl, averageEl, years, rankingData, title, description }) {
+// `xTitle` labels the x-axis ("Year" by default; the ESPN Power Rankings page
+// passes "Week"). `assetPrefix` is the path from the current page to the
+// assets folder ("assets/" from the homepage, "../assets/" from pages/*).
+function renderRankingChart({ chartEl, averageEl, years, rankingData, title, description, xTitle = 'Year', assetPrefix = 'assets/' }) {
   const rankCount = rankingData.length;
   const width = 820, height = 470, left = 180, right = 110, top = 68, bottom = 58;
   const plotRight = width - right;
@@ -172,10 +175,10 @@ function renderRankingChart({ chartEl, averageEl, years, rankingData, title, des
     const avatarCenter = avatarX + avatarSize / 2;
     const knownRanks = manager.ranks.filter(rank => rank != null).join(', ');
 
-    return `<g class="chart-series" data-manager="${manager.name}" tabindex="0" role="group" aria-label="${manager.name}: ranks ${knownRanks}"><defs><clipPath id="${avatarId}"><circle cx="${avatarCenter}" cy="${end.y}" r="${avatarSize / 2}"></circle></clipPath></defs>${path ? `<path class="chart-line" d="${path}" style="stroke:${color}"></path><path class="chart-hit" d="${path}"></path>` : ''}${circles}<text class="chart-name" x="${left - 18}" y="${start.y}" text-anchor="end" dominant-baseline="middle" style="fill:${color}">${manager.name}</text><circle class="chart-avatar-shell" cx="${avatarCenter}" cy="${end.y}" r="${avatarSize / 2 + 3}" style="stroke:${color}"></circle><image class="chart-avatar" href="assets/profiles/${profileImages[manager.name]}" x="${avatarX}" y="${end.y - avatarSize / 2}" width="${avatarSize}" height="${avatarSize}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${avatarId})"></image></g>`;
+    return `<g class="chart-series" data-manager="${manager.name}" tabindex="0" role="group" aria-label="${manager.name}: ranks ${knownRanks}"><defs><clipPath id="${avatarId}"><circle cx="${avatarCenter}" cy="${end.y}" r="${avatarSize / 2}"></circle></clipPath></defs>${path ? `<path class="chart-line" d="${path}" style="stroke:${color}"></path><path class="chart-hit" d="${path}"></path>` : ''}${circles}<text class="chart-name" x="${left - 18}" y="${start.y}" text-anchor="end" dominant-baseline="middle" style="fill:${color}">${manager.name}</text><circle class="chart-avatar-shell" cx="${avatarCenter}" cy="${end.y}" r="${avatarSize / 2 + 3}" style="stroke:${color}"></circle><image class="chart-avatar" href="${assetPrefix}profiles/${profileImages[manager.name]}" x="${avatarX}" y="${end.y - avatarSize / 2}" width="${avatarSize}" height="${avatarSize}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${avatarId})"></image></g>`;
   }).join('');
 
-  chartEl.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="${chartEl.id}-title ${chartEl.id}-description"><title id="${chartEl.id}-title">${title}</title><desc id="${chartEl.id}-description">${description}</desc>${grid}${xLabels}<text class="chart-axis-title" x="${(left + plotRight) / 2}" y="${height - 6}" text-anchor="middle">Year</text><text class="chart-axis-title" transform="translate(22 ${(top + height - bottom) / 2}) rotate(-90)" text-anchor="middle">Rank</text>${lines}</svg>`;
+  chartEl.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="${chartEl.id}-title ${chartEl.id}-description"><title id="${chartEl.id}-title">${title}</title><desc id="${chartEl.id}-description">${description}</desc>${grid}${xLabels}<text class="chart-axis-title" x="${(left + plotRight) / 2}" y="${height - 6}" text-anchor="middle">${xTitle}</text><text class="chart-axis-title" transform="translate(22 ${(top + height - bottom) / 2}) rotate(-90)" text-anchor="middle">Rank</text>${lines}</svg>`;
 
   chartEl.querySelectorAll('.chart-series').forEach(series => {
     const setHighlight = active => series.classList.toggle('is-highlighted', active);
