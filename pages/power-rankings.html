@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('meaux-burreax-theme');
+          document.documentElement.dataset.theme = stored === 'light' ? 'light' : 'dark';
+        } catch (error) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="ESPN: Everybody Start Panicking Now. Weekly ESPN power rankings for every Meaux Burreax manager, by season.">
+    <title>ESPN Power Rankings · Meaux Burreax: Tiers for Fears</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/site.css">
+    <link rel="icon" type="image/png" href="../assets/images/favicon.png">
+    <script src="../assets/site.js" defer></script>
+    <script src="../assets/powerrankings.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="site-header">
+      <div class="site-header__inner">
+        <a class="site-name" href="../index.html">Meaux Burreax: Tiers for Fears</a>
+        <nav aria-label="Primary navigation">
+          <ul class="site-nav">
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="index.html">Pre-Season Rankings</a></li>
+            <li><a aria-current="page" href="power-rankings.html">ESPN Power Rankings</a></li>
+            <li><a href="profiles.html">Manager Profiles</a></li>
+            <li><a href="draftroom.html">Draft Room</a></li>
+            <li><a href="leaderboard.html">All-Time Leaderboard</a></li>
+          </ul>
+        </nav><button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false"><span class="theme-toggle__icon" aria-hidden="true">☾</span><span class="theme-toggle__label">Dark</span></button>
+      </div>
+    </header>
+    <main id="main-content">
+      <section class="content-wrap page-intro power-intro">
+        <p class="eyebrow">Archive</p>
+        <h1>ESPN: Everybody Start Panicking Now</h1>
+        <p class="lede">How ESPN's weekly power rankings have treated every manager, season by season. Hover a line to see who's who.</p>
+      </section>
+      <section
+        id="power-stack"
+        class="charts-stack"
+        aria-label="Weekly power rankings by year"
+        data-src="../assets/data/espn-weekly-rankings.csv"
+      ></section>
+    </main>
+    <footer class="site-footer"><div class="content-wrap"><p>Meaux Burreax: Tiers for Fears.</p></div></footer>
+  </body>
+</html>
