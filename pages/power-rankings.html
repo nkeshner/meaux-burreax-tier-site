@@ -18,10 +18,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/site.css?v=2">
+    <link rel="stylesheet" href="../assets/site.css?v=3">
     <link rel="icon" type="image/png" href="../assets/images/favicon.png">
-    <script src="../assets/site.js?v=2" defer></script>
-    <script src="../assets/powerrankings.js?v=2" defer></script>
+    <script src="../assets/site.js?v=3" defer></script>
+    <script src="../assets/powerrankings.js?v=3" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
@@ -45,6 +45,10 @@
         <p class="eyebrow">Archive</p>
         <h1>ESPN: Everybody Start Panicking Now</h1>
         <p class="lede">How ESPN's weekly power rankings have treated every manager, season by season. Hover a line to see who's who.</p>
+        <div id="power-mode-buttons" class="member-buttons" role="group" aria-label="Choose chart metric">
+          <button type="button" class="member-button is-active" data-mode="rank" aria-pressed="true">Ranking</button>
+          <button type="button" class="member-button" data-mode="odds" aria-pressed="false">Playoff Odds</button>
+        </div>
       </section>
       <section
         id="power-stack"

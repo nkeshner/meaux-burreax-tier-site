@@ -376,23 +376,11 @@ h3 { margin-top: 2rem; font-size: 1.15rem; letter-spacing: .02em; }
 /* ---------------------------------------------------------------------
    ESPN Power Rankings page: the intro is widened to the same 76rem as the
    .charts-stack beneath it (like the homepage hero), and the long page
-   title is allowed to run on one line instead of wrapping at 20ch.
+   title is allowed to run on one line instead of wrapping at 20ch. The
+   Ranking/Playoff Odds toggle reuses .member-buttons/.member-button
+   (defined above under Manager Deep Dive) so it matches every other
+   pill-button picker on the site.
 --------------------------------------------------------------------- */
 .power-intro { width: min(calc(100% - 2.5rem), 76rem); }
 .power-intro h1 { max-width: none; }
-
-/* Two tables beside the chart (ESPN Power Rankings: "Average placement" and
-   "Latest placement"). The side column holds both panels; they share the
-   chart's alignment variables so their rows line up with the chart's rank
-   lines. The "simple" table variant has no value column. */
-.ranking-layout--dual { grid-template-columns: minmax(0, 1fr) 29rem; }
-.ranking-side { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: start; }
-.standings-table--simple .standings-head, .standings-table--simple .standing-row { grid-template-columns: 1.9rem minmax(0, 1fr); }
-.standings-table--simple .standing-row > :last-child, .standings-table--simple .standings-head > :last-child { text-align: left; }
-@media (max-width: 58rem) {
-  .ranking-layout--dual { grid-template-columns: 1fr; }
-  .ranking-side { max-width: 36rem; }
-}
-@media (max-width: 36rem) {
-  .ranking-side { grid-template-columns: 1fr; max-width: 26rem; }
-}
+.power-intro .member-buttons { margin: 1.5rem 0 0; }
