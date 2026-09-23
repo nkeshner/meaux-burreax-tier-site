@@ -305,6 +305,50 @@ function computePlayerAggregates(draftRecap, associations) {
   });
 }
 
+// ---- Section: Loyalty Profiles --------------------------------------------
+
+// >70% Devoted, >50% Loyal, >30% Disloyal, otherwise Cutthroat.
+function loyaltyDesignation(avg) {
+  if (avg > 70) return 'Devoted';
+  if (avg > 50) return 'Loyal';
+  if (avg > 30) return 'Disloyal';
+  return 'Cutthroat';
+}
+
+// A manager's "loyalty pool" is every player, from the full draft board,
+// who is that manager's guy, was last drafted in 2026, and has been
+// drafted more than once (i.e. a guy worth keeping). Loyalty is the
+// average of two views of "how much of that pool stayed with them": a
+// straight count of players, and the same thing weighted by each
+// player's most recent price (so keeping an expensive guy counts more
+// than keeping a $1 flier).
+function computeLoyalty(manager, allRows) {
+  const pool = allRows.filter(row => row.mostRecentYear === '2026' && row.timesDrafted > 1 && row.association === manager);
+  if (pool.length === 0) return { designation: 'Mercenary', avg: null, poolSize: 0 };
+  const kept = pool.filter(row => row.mostRecentManager === manager);
+  const pctPlayers = (kept.length / pool.length) * 100;
+  const totalValue = pool.reduce((sum, row) => sum + row.mostRecentPrice, 0);
+  const keptValue = kept.reduce((sum, row) => sum + row.mostRecentPrice, 0);
+  const pctValue = totalValue > 0 ? (keptValue / totalValue) * 100 : 0;
+  const avg = (pctPlayers + pctValue) / 2;
+  return { designation: loyaltyDesignation(avg), avg, poolSize: pool.length };
+}
+
+function renderLoyaltyGrid(containerEl, managers, allRows) {
+  containerEl.innerHTML = managers.map(manager => {
+    const color = managerColors[manager] ?? '#94a3b8';
+    const image = profileImages[manager];
+    const { designation, avg, poolSize } = computeLoyalty(manager, allRows);
+    const badgeClass = `loyalty-badge--${designation.toLowerCase()}`;
+    const badgeLabel = avg != null ? `${avg.toFixed(0)}% \u00b7 ${designation}` : designation;
+    return `<div class="loyalty-card">
+      ${image ? `<img class="loyalty-avatar" src="../assets/profiles/${image}" alt="${manager}'s profile photo" style="--member-color:${color}">` : `<div class="loyalty-avatar" style="--member-color:${color}"></div>`}
+      <p class="loyalty-name" style="color:${color}">${manager}</p>
+      <span class="loyalty-badge ${badgeClass}" title="${poolSize} eligible guy${poolSize === 1 ? '' : 's'}">${badgeLabel}</span>
+    </div>`;
+  }).join('');
+}
+
 const draftTableColumns = [
   { key: 'player', label: 'Player' },
   { key: 'position', label: 'Pos' },
@@ -391,6 +435,7 @@ function initDraftRoom() {
   const chartTitleEl = document.getElementById('draft-chart-title');
   const chartEl = document.getElementById('draft-value-chart');
   const historyTableEl = document.getElementById('draft-history-table');
+  const loyaltyGridEl = document.getElementById('draft-loyalty-grid');
   const positionFilterEl = document.getElementById('draft-position-filter');
   const yearFilterEl = document.getElementById('draft-year-filter');
   const managerFilterEl = document.getElementById('draft-manager-filter');
@@ -412,6 +457,7 @@ function initDraftRoom() {
       const associations = computeAssociations(averageRows);
       const managers = draftPct.managers;
       const allYears = Array.from(new Set(draftRecap.map(row => row.year))).sort();
+      const allRows = computePlayerAggregates(draftRecap, associations);
 
       if (colorKeyEl) renderColorKey(colorKeyEl, managers);
 
@@ -472,8 +518,10 @@ function initDraftRoom() {
       }
       updateChart();
 
+      // --- Loyalty Profiles ---
+      if (loyaltyGridEl) renderLoyaltyGrid(loyaltyGridEl, managers, allRows);
+
       // --- Section 3: Full Draft Board ---
-      const allRows = computePlayerAggregates(draftRecap, associations);
       const positions = Array.from(new Set(draftRecap.map(row => row.position))).sort();
       positionFilterEl.innerHTML = '<option value="all">All positions</option>' + positions.map(position => `<option value="${position}">${position}</option>`).join('');
       yearFilterEl.innerHTML = '<option value="all">All years</option>' + allYears.map(year => `<option value="${year}">${year}</option>`).join('');
