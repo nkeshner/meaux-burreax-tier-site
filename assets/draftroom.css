@@ -79,6 +79,9 @@
 /* Loyalty Profiles: one card per manager, headshot + name + a colored
    badge naming their loyalty designation (and blended percentage). */
 .loyalty-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: 1.5rem; margin-top: 1.25rem; }
+@media (min-width: 45rem) {
+  .loyalty-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
 .loyalty-card { display: flex; flex-direction: column; align-items: center; gap: .55rem; text-align: center; }
 .loyalty-avatar { width: 5rem; height: 5rem; border-radius: 50%; object-fit: cover; border: 3px solid var(--member-color, var(--line)); background: var(--surface-2); }
 .loyalty-name { margin: 0; font: 700 .92rem/1.2 "Oswald", sans-serif; letter-spacing: .02em; text-transform: uppercase; }

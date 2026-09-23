@@ -19,6 +19,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/site.css">
+    <link rel="icon" type="image/png" href="../assets/images/favicon.png">
     <link rel="stylesheet" href="../assets/draftroom.css">
     <script src="../assets/site.js" defer></script>
     <script src="../assets/draftroom.js" defer></script>
@@ -32,9 +33,10 @@
           <ul class="site-nav">
             <li><a href="../index.html">Home</a></li>
             <li><a href="index.html">Pre-Season Rankings</a></li>
+	    <li><a href="power-rankings.html">ESPN Power Rankings</a></li>
             <li><a href="profiles.html">Manager Profiles</a></li>
+	    <li><a aria-current="page" href="draftroom.html">Draft Room</a></li>
             <li><a href="leaderboard.html">All-Time Leaderboard</a></li>
-            <li><a aria-current="page" href="draftroom.html">Draft Room</a></li>
           </ul>
         </nav><button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false"><span class="theme-toggle__icon" aria-hidden="true">☾</span><span class="theme-toggle__label">Dark</span></button>
       </div>
@@ -73,7 +75,7 @@
       <section class="draft-section" aria-labelledby="draft-loyalty-title">
         <div class="draft-section-head">
           <h2 id="draft-loyalty-title">Loyalty Profiles</h2>
-          <p class="draft-section-sub">Of each manager's guys drafted more than once and still active in 2026, how many stayed on that manager's own roster.</p>
+          <p class="draft-section-sub">How loyal are the managers to their own guys?</p>
         </div>
         <div id="draft-loyalty-grid" class="loyalty-grid" aria-live="polite"></div>
       </section>

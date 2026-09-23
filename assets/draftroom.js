@@ -338,13 +338,12 @@ function renderLoyaltyGrid(containerEl, managers, allRows) {
   containerEl.innerHTML = managers.map(manager => {
     const color = managerColors[manager] ?? '#94a3b8';
     const image = profileImages[manager];
-    const { designation, avg, poolSize } = computeLoyalty(manager, allRows);
+    const { designation, poolSize } = computeLoyalty(manager, allRows);
     const badgeClass = `loyalty-badge--${designation.toLowerCase()}`;
-    const badgeLabel = avg != null ? `${avg.toFixed(0)}% \u00b7 ${designation}` : designation;
     return `<div class="loyalty-card">
       ${image ? `<img class="loyalty-avatar" src="../assets/profiles/${image}" alt="${manager}'s profile photo" style="--member-color:${color}">` : `<div class="loyalty-avatar" style="--member-color:${color}"></div>`}
       <p class="loyalty-name" style="color:${color}">${manager}</p>
-      <span class="loyalty-badge ${badgeClass}" title="${poolSize} eligible guy${poolSize === 1 ? '' : 's'}">${badgeLabel}</span>
+      <span class="loyalty-badge ${badgeClass}" title="${poolSize} eligible guy${poolSize === 1 ? '' : 's'}">${designation}</span>
     </div>`;
   }).join('');
 }
