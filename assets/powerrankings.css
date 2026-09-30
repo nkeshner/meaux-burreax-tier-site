@@ -1,0 +1,19 @@
+/* ---------------------------------------------------------------------
+   ESPN Power Rankings page. Loaded only on pages/power-rankings.html, on
+   top of assets/site.css. Value labels for each recorded week sit above
+   their point and are revealed along with the rest of a series (name,
+   avatar, highlighted line) when it is hovered or keyboard-focused.
+--------------------------------------------------------------------- */
+.chart-value {
+  opacity: 0;
+  pointer-events: none;
+  font: 700 15px "Oswald", sans-serif;
+  letter-spacing: .02em;
+  /* Outline in the surface color keeps numbers legible where lines cross. */
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  transition: opacity .16s ease;
+}
+.chart-series.is-highlighted .chart-value { opacity: 1; }

@@ -120,7 +120,10 @@ function renderPowerAverageTable(averageEl, rankingData, mode) {
 function renderPowerChart({ chartEl, averageEl, weeks, rankingData, mode, title, description, assetPrefix = '../assets/' }) {
   const isRankMode = mode === 'rank';
   const rankCount = rankingData.length;
-  const width = 820, height = 470, left = 180, right = 110, top = 68, bottom = 58;
+  // Odds mode draws "0%"-"100%" tick labels just left of the plot, so it gets a
+  // wider left margin, and its manager names sit further out, to stay clear of them.
+  const width = 820, height = 470, left = isRankMode ? 180 : 250, right = 110, top = 68, bottom = 58;
+  const nameX = isRankMode ? left - 18 : left - 70;
   const plotRight = width - right;
   const x = index => weeks.length > 1 ? left + index * ((plotRight - left) / (weeks.length - 1)) : left;
   const y = isRankMode
@@ -135,7 +138,7 @@ function renderPowerChart({ chartEl, averageEl, weeks, rankingData, mode, title,
     const color = managerColors[manager.name] ?? '#475569';
     const series = isRankMode ? manager.rank : manager.odds;
     const points = series
-      .map((entry, index) => (entry.value == null ? null : { x: x(index), y: y(entry.value), real: entry.real }))
+      .map((entry, index) => (entry.value == null ? null : { x: x(index), y: y(entry.value), real: entry.real, value: entry.value }))
       .filter(Boolean);
 
     if (points.length === 0) return '';
@@ -144,6 +147,12 @@ function renderPowerChart({ chartEl, averageEl, weeks, rankingData, mode, title,
     // Only real (recorded) weeks get a dot; carried-forward weeks still
     // shape the line but aren't marked as a data point.
     const circles = points.filter(point => point.real).map(point => `<circle class="chart-point" cx="${point.x}" cy="${point.y}" r="4" style="stroke:${color}"></circle>`).join('');
+    // Value labels for recorded weeks only; hidden until this series is
+    // hovered or focused (see .chart-value in assets/powerrankings.css).
+    const valueLabels = points.filter(point => point.real).map(point => {
+      const text = isRankMode ? point.value : `${point.value.toFixed(0)}%`;
+      return `<text class="chart-value" x="${point.x}" y="${point.y - 12}" text-anchor="middle" style="fill:${color}">${text}</text>`;
+    }).join('');
     const start = points[0];
     const end = points.at(-1);
     const avatarX = plotRight + 18;
@@ -155,7 +164,7 @@ function renderPowerChart({ chartEl, averageEl, weeks, rankingData, mode, title,
       .map(entry => (isRankMode ? entry.value : `${entry.value.toFixed(0)}%`))
       .join(', ');
 
-    return `<g class="chart-series" data-manager="${manager.name}" tabindex="0" role="group" aria-label="${manager.name}: ${isRankMode ? 'ranks' : 'playoff odds'} ${knownValues}"><defs><clipPath id="${avatarId}"><circle cx="${avatarCenter}" cy="${end.y}" r="${avatarSize / 2}"></circle></clipPath></defs>${path ? `<path class="chart-line" d="${path}" style="stroke:${color}"></path><path class="chart-hit" d="${path}"></path>` : ''}${circles}<text class="chart-name" x="${left - 18}" y="${start.y}" text-anchor="end" dominant-baseline="middle" style="fill:${color}">${manager.name}</text><circle class="chart-avatar-shell" cx="${avatarCenter}" cy="${end.y}" r="${avatarSize / 2 + 3}" style="stroke:${color}"></circle><image class="chart-avatar" href="${assetPrefix}profiles/${profileImages[manager.name]}" x="${avatarX}" y="${end.y - avatarSize / 2}" width="${avatarSize}" height="${avatarSize}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${avatarId})"></image></g>`;
+    return `<g class="chart-series" data-manager="${manager.name}" tabindex="0" role="group" aria-label="${manager.name}: ${isRankMode ? 'ranks' : 'playoff odds'} ${knownValues}"><defs><clipPath id="${avatarId}"><circle cx="${avatarCenter}" cy="${end.y}" r="${avatarSize / 2}"></circle></clipPath></defs>${path ? `<path class="chart-line" d="${path}" style="stroke:${color}"></path><path class="chart-hit" d="${path}"></path>` : ''}${circles}${valueLabels}<text class="chart-name" x="${nameX}" y="${start.y}" text-anchor="end" dominant-baseline="middle" style="fill:${color}">${manager.name}</text><circle class="chart-avatar-shell" cx="${avatarCenter}" cy="${end.y}" r="${avatarSize / 2 + 3}" style="stroke:${color}"></circle><image class="chart-avatar" href="${assetPrefix}profiles/${profileImages[manager.name]}" x="${avatarX}" y="${end.y - avatarSize / 2}" width="${avatarSize}" height="${avatarSize}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${avatarId})"></image></g>`;
   }).join('');
 
   chartEl.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="${chartEl.id}-title ${chartEl.id}-description"><title id="${chartEl.id}-title">${title}</title><desc id="${chartEl.id}-description">${description}</desc>${grid}${xLabels}<text class="chart-axis-title" x="${(left + plotRight) / 2}" y="${height - 6}" text-anchor="middle">Week</text><text class="chart-axis-title" transform="translate(22 ${(top + height - bottom) / 2}) rotate(-90)" text-anchor="middle">${isRankMode ? 'Rank' : 'Playoff Odds'}</text>${lines}</svg>`;
